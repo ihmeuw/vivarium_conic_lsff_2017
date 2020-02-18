@@ -164,7 +164,16 @@ def build_single_location_artifact(path: Union[str, Path], location: str, log_to
     logger.info(f'Loading and writing demographic data.')
     builder.load_and_write_demographic_data(artifact, location)
 
-    # TODO - add your data
+    logger.info(f'Loading and writing diarrhea data.')
+    builder.load_and_write_diarrhea_data(artifact, location)
+    logger.info(f'Loading and writing measles data.')
+    builder.load_and_write_measles_data(artifact, location)
+    logger.info(f'Loading and writing lri data.')
+    builder.load_and_write_lri_data(artifact, location)
+    logger.info(f'Loading and writing meningitis data.')
+    builder.load_and_write_meningitis_data(artifact, location)
+    logger.info(f'Loading and writing neonatal disorders data.')
+    builder.load_and_write_neonatal_data(artifact, location)
 
     logger.info('**DONE**')
 
