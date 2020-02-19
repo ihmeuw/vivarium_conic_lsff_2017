@@ -35,12 +35,28 @@ POPULATION_TMRLE = 'population.theoretical_minimum_risk_life_expectancy'
 
 ALL_CAUSE_CSMR = 'cause.all_causes.cause_specific_mortality_rate'
 
-# TODO - sample keys of type EntityKey used to identify data in the model.
-# For more information see the tutorial:
-# https://vivarium-inputs.readthedocs.io/en/latest/tutorials/pulling_data.html#entity-measure-data
-# DIARRHEA_PREVALENCE = 'cause.diarrheal_diseases.prevalence'
-# STUNTING_CATEGORIES = 'risk_factor.child_stunting.categories'
-# STUNTING_EXPOSURE_MEAN = 'alternative_risk_factor.child_stunting.exposure'
+DIARRHEA_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.diarrheal_diseases.cause_specific_mortality_rate'
+DIARRHEA_PREVALENCE = 'cause.diarrheal_diseases.prevalence'
+DIARRHEA_INCIDENCE_RATE = 'cause.diarrheal_diseases.incidence_rate'
+DIARRHEA_REMISSION_RATE = 'cause.diarrheal_diseases.remission_rate'
+DIARRHEA_EXCESS_MORTALITY_RATE = 'cause.diarrheal_diseases.excess_mortality_rate'
+DIARRHEA_DISABILITY_WEIGHT = 'cause.diarrheal_diseases.disability_weight'
+DIARRHEA_RESTRICTIONS = 'cause.diarrheal_diseases.restrictions'
+
+MEASLES_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.measles.cause_specific_mortality_rate'
+MEASLES_PREVALENCE = 'cause.measles.prevalence'
+MEASLES_INCIDENCE_RATE = 'cause.measles.incidence_rate'
+MEASLES_EXCESS_MORTALITY_RATE = 'cause.measles.excess_mortality_rate'
+MEASLES_DISABILITY_WEIGHT = 'cause.measles.disability_weight'
+MEASLES_RESTRICTIONS = 'cause.measles.restrictions'
+
+LRI_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.lower_respiratory_infections.cause_specific_mortality_rate'
+LRI_PREVALENCE = 'cause.lower_respiratory_infections.prevalence'
+LRI_INCIDENCE_RATE = 'cause.lower_respiratory_infections.incidence_rate'
+LRI_REMISSION_RATE = 'cause.lower_respiratory_infections.remission_rate'
+LRI_EXCESS_MORTALITY_RATE = 'cause.lower_respiratory_infections.excess_mortality_rate'
+LRI_DISABILITY_WEIGHT = 'cause.lower_respiratory_infections.disability_weight'
+LRI_RESTRICTIONS = 'cause.lower_respiratory_infections.restrictions'
 
 
 ###########################

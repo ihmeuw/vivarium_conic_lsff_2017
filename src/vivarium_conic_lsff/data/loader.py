@@ -44,14 +44,28 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         project_globals.POPULATION_TMRLE: load_theoretical_minimum_risk_life_expectancy,
         project_globals.ALL_CAUSE_CSMR: load_standard_data,
 
-        # TODO - add appropriate mappings
-        # project_globals.DIARRHEA_PREVALENCE: load_standard_data,
-        # project_globals.DIARRHEA_INCIDENCE_RATE: load_standard_data,
-        # project_globals.DIARRHEA_REMISSION_RATE: load_standard_data,
-        # project_globals.DIARRHEA_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
-        # project_globals.DIARRHEA_EXCESS_MORTALITY_RATE: load_standard_data,
-        # project_globals.DIARRHEA_DISABILITY_WEIGHT: load_standard_data,
-        # project_globals.DIARRHEA_RESTRICTIONS: load_metadata,
+        project_globals.DIARRHEA_PREVALENCE: load_standard_data,
+        project_globals.DIARRHEA_INCIDENCE_RATE: load_standard_data,
+        project_globals.DIARRHEA_REMISSION_RATE: load_standard_data,
+        project_globals.DIARRHEA_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
+        project_globals.DIARRHEA_EXCESS_MORTALITY_RATE: load_standard_data,
+        project_globals.DIARRHEA_DISABILITY_WEIGHT: load_standard_data,
+        project_globals.DIARRHEA_RESTRICTIONS: load_metadata,
+
+        project_globals.MEASLES_PREVALENCE: load_standard_data,
+        project_globals.MEASLES_INCIDENCE_RATE: load_standard_data,
+        project_globals.MEASLES_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
+        project_globals.MEASLES_EXCESS_MORTALITY_RATE: load_standard_data,
+        project_globals.MEASLES_DISABILITY_WEIGHT: load_standard_data,
+        project_globals.MEASLES_RESTRICTIONS: load_metadata,
+
+        project_globals.LRI_PREVALENCE: load_standard_data,
+        project_globals.LRI_INCIDENCE_RATE: load_standard_data,
+        project_globals.LRI_REMISSION_RATE: load_standard_data,
+        project_globals.LRI_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
+        project_globals.LRI_EXCESS_MORTALITY_RATE: load_standard_data,
+        project_globals.LRI_DISABILITY_WEIGHT: load_standard_data,
+        project_globals.LRI_RESTRICTIONS: load_metadata,
     }
     return mapping[lookup_key](lookup_key, location)
 
@@ -88,6 +102,15 @@ def load_metadata(key: str, location: str):
 
 
 # TODO - add project-specific data functions here
+def load_meningitis_disability_weight(key: str, location: str) -> pd.DataFrame:
+    meningitis = get_entity(key)
+    sub_cause_dws = []
+    for subcause in meningitis.sub_causes:
+        prevalence = interface.get_measure(subcause, 'prevalence', location)
+        disability = interface.get_measure(subcause, 'disability_weight', location)
+        sub_cause_dws.append(prevalence * disability)
+    meningitis_prevalence = interface.get_measure(meningitis, 'prevalence', location)
+    return sum(sub_cause_dws) / meningitis_prevalence
 
 
 def get_entity(key: str):

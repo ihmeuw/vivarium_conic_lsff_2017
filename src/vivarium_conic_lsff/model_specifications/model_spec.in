@@ -3,6 +3,11 @@ components:
         population:
             - BasePopulation()
             - Mortality()
+        disease.models:
+            - SIS('diarrheal_diseases')
+            - SIR_fixed_duration('measles', '10')
+            - SIS('lower_respiratory_infections')
+
         metrics:
             - DisabilityObserver()
             - MortalityObserver()
