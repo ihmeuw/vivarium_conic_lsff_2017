@@ -124,11 +124,11 @@ def load_and_write_demographic_data(artifact: Artifact, location: str):
         project_globals.POPULATION_DEMOGRAPHY,
         project_globals.POPULATION_TMRLE,  # Theoretical life expectancy
         project_globals.ALL_CAUSE_CSMR,
+        project_globals.COVARIATE_LIVE_BIRTHS_BY_SEX,
     ]
 
     for key in keys:
         load_and_write_data(artifact, key, location)
-
 
 
 def load_and_write_diarrhea_data(artifact: Artifact, location: str):
@@ -175,15 +175,14 @@ def load_and_write_lri_data(artifact: Artifact, location: str):
         load_and_write_data(artifact, key, location)
 
 
-def load_and_write_meningitis_data(artifact: Artifact, location: str):
+def load_and_write_neural_tube_data(artifact: Artifact, location: str):
     keys = [
-        project_globals.MENINGITIS_PREVALENCE,
-        project_globals.MENINGITIS_INCIDENCE_RATE,
-        project_globals.MENINGITIS_REMISSION_RATE,
-        project_globals.MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
-        project_globals.MENINGITIS_EXCESS_MORTALITY_RATE,
-        project_globals.MENINGITIS_DISABILITY_WEIGHT,
-        project_globals.MENINGITIS_RESTRICTIONS
+        project_globals.NEURAL_TUBE_DEFECTS_CAUSE_SPECIFIC_MORTALITY_RATE,
+        project_globals.NEURAL_TUBE_DEFECTS_PREVALENCE,
+        project_globals.NEURAL_TUBE_DEFECTS_BIRTH_PREVALENCE,
+        project_globals.NEURAL_TUBE_DEFECTS_EXCESS_MORTALITY_RATE,
+        project_globals.NEURAL_TUBE_DEFECTS_DISABILITY_WEIGHT,
+        project_globals.NEURAL_TUBE_DEFECTS_RESTRICTIONS,
     ]
 
     for key in keys:
