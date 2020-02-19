@@ -66,21 +66,6 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         project_globals.LRI_EXCESS_MORTALITY_RATE: load_standard_data,
         project_globals.LRI_DISABILITY_WEIGHT: load_standard_data,
         project_globals.LRI_RESTRICTIONS: load_metadata,
-
-        project_globals.MENINGITIS_PREVALENCE: load_standard_data,
-        project_globals.MENINGITIS_INCIDENCE_RATE: load_standard_data,
-        project_globals.MENINGITIS_REMISSION_RATE: load_standard_data,
-        project_globals.MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
-        project_globals.MENINGITIS_EXCESS_MORTALITY_RATE: load_standard_data,
-        project_globals.MENINGITIS_DISABILITY_WEIGHT: load_meningitis_disability_weight,
-        project_globals.MENINGITIS_RESTRICTIONS: load_metadata,
-
-        project_globals.NEONATAL_DISORDERS_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
-        project_globals.NEONATAL_DISORDERS_PREVALENCE: load_standard_data,
-        project_globals.NEONATAL_DISORDERS_BIRTH_PREVALENCE: load_standard_data,
-        project_globals.NEONATAL_DISORDERS_EXCESS_MORTALITY_RATE: load_standard_data,
-        project_globals.NEONATAL_DISORDERS_DISABILITY_WEIGHT: load_standard_data,
-        project_globals.NEONATAL_DISORDERS_RESTRICTIONS: load_metadata,
     }
     return mapping[lookup_key](lookup_key, location)
 

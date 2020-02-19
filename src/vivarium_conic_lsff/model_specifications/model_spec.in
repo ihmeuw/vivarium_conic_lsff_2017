@@ -7,8 +7,6 @@ components:
             - SIS('diarrheal_diseases')
             - SIR_fixed_duration('measles', '10')
             - SIS('lower_respiratory_infections')
-            - SIS('meningitis')
-            - NeonatalSWC_without_incidence('neonatal_disorders')
 
         metrics:
             - DisabilityObserver()
