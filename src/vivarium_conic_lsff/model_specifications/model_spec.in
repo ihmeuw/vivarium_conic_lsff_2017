@@ -12,8 +12,11 @@ components:
             - DisabilityObserver()
             - MortalityObserver()
 
-    # Causes an error if left empty. Uncomment when you have components. 
-    # vivarium_conic_lsff.components:
+    vivarium_conic_lsff.components:
+        - DiseaseObserver('diarrheal_diseases')
+        - DiseaseObserver('measles')
+        - DiseaseObserver('lower_respiratory_infections')
+        - DiseaseObserver('neural_tube_defects')
 
 configuration:
     input_data:
