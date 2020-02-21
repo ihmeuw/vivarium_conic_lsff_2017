@@ -35,6 +35,8 @@ POPULATION_TMRLE = 'population.theoretical_minimum_risk_life_expectancy'
 
 ALL_CAUSE_CSMR = 'cause.all_causes.cause_specific_mortality_rate'
 
+COVARIATE_LIVE_BIRTHS_BY_SEX = 'covariate.live_births_by_sex.estimate'
+
 DIARRHEA_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.diarrheal_diseases.cause_specific_mortality_rate'
 DIARRHEA_PREVALENCE = 'cause.diarrheal_diseases.prevalence'
 DIARRHEA_INCIDENCE_RATE = 'cause.diarrheal_diseases.incidence_rate'
@@ -58,6 +60,12 @@ LRI_EXCESS_MORTALITY_RATE = 'cause.lower_respiratory_infections.excess_mortality
 LRI_DISABILITY_WEIGHT = 'cause.lower_respiratory_infections.disability_weight'
 LRI_RESTRICTIONS = 'cause.lower_respiratory_infections.restrictions'
 
+NEURAL_TUBE_DEFECTS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.neural_tube_defects.cause_specific_mortality_rate'
+NEURAL_TUBE_DEFECTS_PREVALENCE = 'cause.neural_tube_defects.prevalence'
+NEURAL_TUBE_DEFECTS_BIRTH_PREVALENCE = 'cause.neural_tube_defects.birth_prevalence'
+NEURAL_TUBE_DEFECTS_EXCESS_MORTALITY_RATE = 'cause.neural_tube_defects.excess_mortality_rate'
+NEURAL_TUBE_DEFECTS_DISABILITY_WEIGHT = 'cause.neural_tube_defects.disability_weight'
+NEURAL_TUBE_DEFECTS_RESTRICTIONS = 'cause.neural_tube_defects.restrictions'
 
 ###########################
 # Disease Model variables #
