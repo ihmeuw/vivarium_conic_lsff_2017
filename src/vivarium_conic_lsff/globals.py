@@ -67,7 +67,6 @@ NEURAL_TUBE_DEFECTS_EXCESS_MORTALITY_RATE = 'cause.neural_tube_defects.excess_mo
 NEURAL_TUBE_DEFECTS_DISABILITY_WEIGHT = 'cause.neural_tube_defects.disability_weight'
 NEURAL_TUBE_DEFECTS_RESTRICTIONS = 'cause.neural_tube_defects.restrictions'
 
-
 ###########################
 # Disease Model variables #
 ###########################

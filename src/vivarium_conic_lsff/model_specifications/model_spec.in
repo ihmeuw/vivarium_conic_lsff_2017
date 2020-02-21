@@ -8,7 +8,7 @@ components:
             - SIS('diarrheal_diseases')
             - SIR_fixed_duration('measles', '10')
             - SIS('lower_respiratory_infections')
-            - NeonatalSWC_without_incidence('neural_tube_defects')
+
         metrics:
             - DisabilityObserver()
             - MortalityObserver()
@@ -17,7 +17,7 @@ components:
         - DiseaseObserver('diarrheal_diseases')
         - DiseaseObserver('measles')
         - DiseaseObserver('lower_respiratory_infections')
-        - DiseaseObserver('neural_tube_defects')
+        - LiveBirthWithNTDObserver()
 
 configuration:
     input_data:

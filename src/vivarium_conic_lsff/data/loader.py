@@ -110,15 +110,6 @@ def load_metadata(key: str, location: str):
 
 
 # TODO - add project-specific data functions here
-def load_meningitis_disability_weight(key: str, location: str) -> pd.DataFrame:
-    meningitis = get_entity(key)
-    sub_cause_dws = []
-    for subcause in meningitis.sub_causes:
-        prevalence = interface.get_measure(subcause, 'prevalence', location)
-        disability = interface.get_measure(subcause, 'disability_weight', location)
-        sub_cause_dws.append(prevalence * disability)
-    meningitis_prevalence = interface.get_measure(meningitis, 'prevalence', location)
-    return sum(sub_cause_dws) / meningitis_prevalence
 
 
 def get_entity(key: str):
