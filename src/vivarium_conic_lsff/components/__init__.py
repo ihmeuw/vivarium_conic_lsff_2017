@@ -1,1 +1,1 @@
-from .observers import DiseaseObserver, LiveBirthWithNTDObserver
+from .observers import DiseaseObserver

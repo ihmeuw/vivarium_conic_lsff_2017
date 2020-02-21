@@ -3,7 +3,6 @@ components:
         population:
             - BasePopulation()
             - Mortality()
-            - FertilityCrudeBirthRate()
         disease.models:
             - SIS('diarrheal_diseases')
             - SIR_fixed_duration('measles', '10')
