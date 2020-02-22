@@ -142,30 +142,24 @@ class LiveBirthWithNTDObserver:
     """
     configuration_defaults = {
         'metrics': {
-            'disease_observer': {
+            'live_births_with_ntds': {
                 'by_year': True,
                 'by_sex': True,
             }
         }
     }
 
-    def __init__(self):
-        self.disease = project_globals.NTD_MODEL_NAME
-        self.configuration_defaults = {
-            'metrics': {f'{self.disease}_observer': LiveBirthWithNTDObserver.configuration_defaults['metrics'][
-                'disease_observer']}
-        }
-
     @property
     def name(self):
         return f'live_birth_with_ntd_observer'
 
     def setup(self, builder):
-        self.config = builder.configuration['metrics'][f'{self.disease}_observer'].to_dict()
+        self.disease = project_globals.NTD_MODEL_NAME
+        self.config = builder.configuration['metrics']['live_births_with_ntds'].to_dict()
         self.live_birth_counts = Counter()
         self.with_disease = Counter()
         tmp = builder.configuration['time']['start']
-        self._reference_time = pd.Timestamp(tmp['year'], tmp['month'], tmp['day'])
+        self._step_start_time = pd.Timestamp(tmp['year'], tmp['month'], tmp['day'])
 
         columns_required = ['alive', f'{self.disease}', 'entrance_time']
         if self.config['by_sex']:
@@ -178,10 +172,10 @@ class LiveBirthWithNTDObserver:
     def on_collect_metrics(self, event):
         pop = self.population_view.get(event.index)
         self.live_birth_counts.update(
-            get_live_births(pop, self.config, self._reference_time, event.time.year))
+            get_live_births(pop, self.config, self._step_start_time, event.time.year))
         self.with_disease.update(
-            get_with_ntd_births(pop, self.config, self._reference_time, event.time.year))
-        self._reference_time = pd.Timestamp(event.time.year, event.time.month, event.time.day)
+            get_with_ntd_births(pop, self.config, self._step_start_time, event.time.year))
+        self._step_start_time = pd.Timestamp(event.time.year, event.time.month, event.time.day)
 
     def metrics(self, index, metrics):
         metrics.update(self.live_birth_counts)
@@ -193,37 +187,17 @@ class LiveBirthWithNTDObserver:
 
 
 def get_live_births(pop, config, reference_time, year):
-    retval = {}
     filter = QueryString(f'alive == "alive" and entrance_time >= "{reference_time}"')
-    base_key = get_output_template(False, **config).substitute(
-        measure=f'live_births', year=year if config['by_year'] else None)
-    if config['by_sex']:
-        for i in ["Male", "Female"]:
-            filt_sex = filter + f'sex == "{i}"'
-            df = pop.query(filt_sex)
-            key = f'{base_key.substitute(sex=i)}'
-            retval[key] = len(df)
-    else:
-        df = pop.query(filter)
-        retval[f'{base_key}'] = len(df)
-    return retval
+    base_key = get_output_template(False, **config).substitute(measure=f'live_births', year=year)
+    cfg = {'by_age': False, 'by_sex': config['by_sex']}
+    return get_group_counts(pop, filter, base_key, cfg, pd.DataFrame())
 
 
 def get_with_ntd_births(pop, config, reference_time, year):
-    retval = {}
     filter = QueryString(f'alive == "alive"'
             f' and {project_globals.NTD_MODEL_NAME} == "{project_globals.NTD_MODEL_NAME}"'
             f' and entrance_time >= "{reference_time}"')
-    base_key = get_output_template(False, **config).substitute(
-        measure=f'born_with_ntd', year=year if config['by_year'] else None)
-    if config['by_sex']:
-        for i in ["Male", "Female"]:
-            filt_sex = filter + f'sex == "{i}"'
-            df = pop.query(filt_sex)
-            key = f'{base_key.substitute(sex=i)}'
-            retval[key] = len(df)
-    else:
-        df = pop.query(filter)
-        retval[f'{base_key}'] = len(df)
-    return retval
+    base_key = get_output_template(False, **config).substitute(measure=f'born_with_ntd', year=year)
+    cfg = {'by_age': False, 'by_sex': config['by_sex']}
+    return get_group_counts(pop, filter, base_key, cfg, pd.DataFrame())
 
