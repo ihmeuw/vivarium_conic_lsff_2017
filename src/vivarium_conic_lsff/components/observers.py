@@ -142,7 +142,7 @@ class LiveBirthWithNTDObserver:
     """
     configuration_defaults = {
         'metrics': {
-            'live_births_with_ntds': {
+            project_globals.NTD_OBSERVER: {
                 'by_year': True,
                 'by_sex': True,
             }
@@ -151,11 +151,12 @@ class LiveBirthWithNTDObserver:
 
     @property
     def name(self):
-        return f'live_birth_with_ntd_observer'
+        return project_globals.NTD_OBSERVER
 
     def setup(self, builder):
         self.disease = project_globals.NTD_MODEL_NAME
-        self.config = builder.configuration['metrics']['live_births_with_ntds'].to_dict()
+        self.config = builder.configuration['metrics'][project_globals.NTD_OBSERVER].to_dict()
+        self.config['by_age'] = False
         self.live_birth_counts = Counter()
         self.with_disease = Counter()
         tmp = builder.configuration['time']['start']
@@ -171,10 +172,10 @@ class LiveBirthWithNTDObserver:
 
     def on_collect_metrics(self, event):
         pop = self.population_view.get(event.index)
-        self.live_birth_counts.update(
-            get_live_births(pop, self.config, self._step_start_time, event.time.year))
-        self.with_disease.update(
-            get_with_ntd_births(pop, self.config, self._step_start_time, event.time.year))
+        live_births_this_step = get_live_births(pop, self.config, self._step_start_time, event.time.year)
+        self.live_birth_counts.update(live_births_this_step)
+        births_with_ntds_this_step = get_with_ntd_births(pop, self.config, self._step_start_time, event.time.year)
+        self.with_disease.update(births_with_ntds_this_step)
         self._step_start_time = pd.Timestamp(event.time.year, event.time.month, event.time.day)
 
     def metrics(self, index, metrics):
@@ -188,7 +189,7 @@ class LiveBirthWithNTDObserver:
 
 def get_live_births(pop, config, reference_time, year):
     filter = QueryString(f'alive == "alive" and entrance_time >= "{reference_time}"')
-    base_key = get_output_template(False, **config).substitute(measure=f'live_births', year=year)
+    base_key = get_output_template(**config).substitute(measure=f'live_births', year=year)
     cfg = {'by_age': False, 'by_sex': config['by_sex']}
     return get_group_counts(pop, filter, base_key, cfg, pd.DataFrame())
 
@@ -197,7 +198,7 @@ def get_with_ntd_births(pop, config, reference_time, year):
     filter = QueryString(f'alive == "alive"'
             f' and {project_globals.NTD_MODEL_NAME} == "{project_globals.NTD_MODEL_NAME}"'
             f' and entrance_time >= "{reference_time}"')
-    base_key = get_output_template(False, **config).substitute(measure=f'born_with_ntd', year=year)
+    base_key = get_output_template(**config).substitute(measure=f'born_with_ntd', year=year)
     cfg = {'by_age': False, 'by_sex': config['by_sex']}
     return get_group_counts(pop, filter, base_key, cfg, pd.DataFrame())
 
