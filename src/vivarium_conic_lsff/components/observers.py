@@ -160,11 +160,10 @@ class LiveBirthWithNTDObserver:
         self.config['by_age'] = False
 
         tmp = builder.configuration['time']['start']
-        self._sim_start = pd.Timestamp(tmp.year, tmp.month, tmp.day)
-        tmp = builder.configuration['time']['end']
-        self._sim_end = pd.Timestamp(tmp.year, tmp.month, tmp.day)
+        self._sim_start = pd.Timestamp(**builder.configuration.time.start.to_dict())
+        self._sim_end = pd.Timestamp(**builder.configuration.time.end.to_dict())
 
-        columns_required = ['alive', 'dead', f'{self.disease}', 'entrance_time', 'tracked', 'untracked']
+        columns_required = ['alive', 'dead', f'{self.disease}', 'entrance_time', 'tracked']
         if self.config['by_sex']:
             columns_required.append('sex')
 
@@ -212,7 +211,7 @@ def get_births(pop: pd.DataFrame, config: Dict[str, bool], sim_start: pd.Timesta
     for year, (t_start, t_end) in time_spans:
         start = max(sim_start, t_start)
         end = min(sim_end, t_end)
-        born_in_span = pop.query(f'entrance_time >= "{start}" and entrance_time < "{end}"')
+        born_in_span = pop.query(f'"{start}" <= entrance_time and entrance_time < "{end}"')
 
         cat_year_key = base_key.substitute(measure='live_births', year=year)
         filter = base_filter
@@ -221,7 +220,8 @@ def get_births(pop: pd.DataFrame, config: Dict[str, bool], sim_start: pd.Timesta
 
         cat_year_key = base_key.substitute(measure='born_with_ntds', year=year)
         filter = base_filter + f'{project_globals.NTD_MODEL_NAME} == "{project_globals.NTD_MODEL_NAME}"'
-        group_ntd_births = get_group_counts(born_in_span, filter, cat_year_key, config, pd.DataFrame())
+        empty_age_bins = pd.DataFrame()
+        group_ntd_births = get_group_counts(born_in_span, filter, cat_year_key, config, empty_age_bins)
         births.update(group_ntd_births)
     return births
 
