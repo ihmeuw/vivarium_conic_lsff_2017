@@ -1,8 +1,9 @@
 from collections import Counter
+from typing import Dict, List
 
 import pandas as pd
 from vivarium_public_health.metrics.utilities import (get_output_template, get_group_counts,
-                                                      QueryString, to_years, get_age_bins)
+                                                      QueryString, to_years, get_age_bins, get_time_iterable)
 
 from vivarium_conic_lsff import globals as project_globals
 
@@ -157,48 +158,70 @@ class LiveBirthWithNTDObserver:
         self.disease = project_globals.NTD_MODEL_NAME
         self.config = builder.configuration['metrics'][project_globals.NTD_OBSERVER].to_dict()
         self.config['by_age'] = False
-        self.live_birth_counts = Counter()
-        self.with_disease = Counter()
-        tmp = builder.configuration['time']['start']
-        self._step_start_time = pd.Timestamp(tmp['year'], tmp['month'], tmp['day'])
 
-        columns_required = ['alive', f'{self.disease}', 'entrance_time']
+        tmp = builder.configuration['time']['start']
+        self._sim_start = pd.Timestamp(tmp.year, tmp.month, tmp.day)
+        tmp = builder.configuration['time']['end']
+        self._sim_end = pd.Timestamp(tmp.year, tmp.month, tmp.day)
+
+        columns_required = ['alive', 'dead', f'{self.disease}', 'entrance_time', 'tracked', 'untracked']
         if self.config['by_sex']:
             columns_required.append('sex')
+
         self.population_view = builder.population.get_view(columns_required)
-
         builder.value.register_value_modifier('metrics', self.metrics)
-        builder.event.register_listener('collect_metrics', self.on_collect_metrics)
 
-    def on_collect_metrics(self, event):
-        pop = self.population_view.get(event.index)
-        live_births_this_step = get_live_births(pop, self.config, self._step_start_time, event.time.year)
-        self.live_birth_counts.update(live_births_this_step)
-        births_with_ntds_this_step = get_with_ntd_births(pop, self.config, self._step_start_time, event.time.year)
-        self.with_disease.update(births_with_ntds_this_step)
-        self._step_start_time = pd.Timestamp(event.time.year, event.time.month, event.time.day)
 
     def metrics(self, index, metrics):
-        metrics.update(self.live_birth_counts)
-        metrics.update(self.with_disease)
+        pop = self.population_view.get(index)
+        births = get_births(pop, self.config, self._sim_start, self._sim_end)
+        metrics.update(births)
         return metrics
+
 
     def __repr__(self):
         return f"DiseaseObserver({self.disease})"
 
 
-def get_live_births(pop, config, reference_time, year):
-    filter = QueryString(f'alive == "alive" and entrance_time >= "{reference_time}"')
-    base_key = get_output_template(**config).substitute(measure=f'live_births', year=year)
-    cfg = {'by_age': False, 'by_sex': config['by_sex']}
-    return get_group_counts(pop, filter, base_key, cfg, pd.DataFrame())
+def get_births(pop: pd.DataFrame, config: Dict[str, bool], sim_start: pd.Timestamp,
+               sim_end: pd.Timestamp) -> Dict[str, int]:
+    """Counts the number of births and births with neural tube defects prevelant.
+    Parameters
+    ----------
+    pop
+        The population dataframe to be counted. It must contain sufficient
+        columns for any necessary filtering (e.g. the ``age`` column if
+        filtering by age).
+    config
+        A dict with ``by_age``, ``by_sex``, and ``by_year`` keys and
+        boolean values.
+    sim_start
+        The simulation start time.
+    sim_end
+        The simulation end time.
+    Returns
+    -------
+    births
+        All births and births with neural tube defects present.
+    """
+    base_filter = QueryString('')
+    base_key = get_output_template(**config)
+    time_spans = get_time_iterable(config, sim_start, sim_end)
 
+    births = {}
+    for year, (t_start, t_end) in time_spans:
+        start = max(sim_start, t_start)
+        end = min(sim_end, t_end)
+        born_in_span = pop.query(f'entrance_time >= "{start}" and entrance_time < "{end}"')
 
-def get_with_ntd_births(pop, config, reference_time, year):
-    filter = QueryString(f'alive == "alive"'
-            f' and {project_globals.NTD_MODEL_NAME} == "{project_globals.NTD_MODEL_NAME}"'
-            f' and entrance_time >= "{reference_time}"')
-    base_key = get_output_template(**config).substitute(measure=f'born_with_ntd', year=year)
-    cfg = {'by_age': False, 'by_sex': config['by_sex']}
-    return get_group_counts(pop, filter, base_key, cfg, pd.DataFrame())
+        cat_year_key = base_key.substitute(measure='live_births', year=year)
+        filter = base_filter
+        group_births = get_group_counts(born_in_span, filter, cat_year_key, config, pd.DataFrame())
+        births.update(group_births)
+
+        cat_year_key = base_key.substitute(measure='born_with_ntds', year=year)
+        filter = base_filter + f'{project_globals.NTD_MODEL_NAME} == "{project_globals.NTD_MODEL_NAME}"'
+        group_ntd_births = get_group_counts(born_in_span, filter, cat_year_key, config, pd.DataFrame())
+        births.update(group_ntd_births)
+    return births
 
