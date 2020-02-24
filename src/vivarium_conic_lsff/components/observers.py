@@ -1,8 +1,9 @@
 from collections import Counter
+from typing import Dict, List
 
 import pandas as pd
 from vivarium_public_health.metrics.utilities import (get_output_template, get_group_counts,
-                                                      QueryString, to_years, get_age_bins)
+                                                      QueryString, to_years, get_age_bins, get_time_iterable)
 
 from vivarium_conic_lsff import globals as project_globals
 
@@ -133,3 +134,94 @@ def get_transition_count(pop, config, disease, transition, event_time, age_bins)
     base_filter = QueryString('')
     transition_count = get_group_counts(transitioned_pop, base_filter, base_key, config, age_bins)
     return transition_count
+
+
+
+class LiveBirthWithNTDObserver:
+    """Observes births and births with neural tube defects. Output can be stratified
+    by year and by sex.
+    """
+    configuration_defaults = {
+        'metrics': {
+            project_globals.NTD_OBSERVER: {
+                'by_year': True,
+                'by_sex': True,
+            }
+        }
+    }
+
+    @property
+    def name(self):
+        return project_globals.NTD_OBSERVER
+
+    def setup(self, builder):
+        self.disease = project_globals.NTD_MODEL_NAME
+        self.config = builder.configuration['metrics'][project_globals.NTD_OBSERVER].to_dict()
+        self.config['by_age'] = False
+
+        tmp = builder.configuration['time']['start']
+        self._sim_start = pd.Timestamp(**builder.configuration.time.start.to_dict())
+        self._sim_end = pd.Timestamp(**builder.configuration.time.end.to_dict())
+
+        columns_required = ['alive', 'dead', f'{self.disease}', 'entrance_time', 'tracked']
+        if self.config['by_sex']:
+            columns_required.append('sex')
+
+        self.population_view = builder.population.get_view(columns_required)
+        builder.value.register_value_modifier('metrics', self.metrics)
+
+
+    def metrics(self, index, metrics):
+        pop = self.population_view.get(index)
+        births = get_births(pop, self.config, self._sim_start, self._sim_end)
+        metrics.update(births)
+        return metrics
+
+
+    def __repr__(self):
+        return f"DiseaseObserver({self.disease})"
+
+
+def get_births(pop: pd.DataFrame, config: Dict[str, bool], sim_start: pd.Timestamp,
+               sim_end: pd.Timestamp) -> Dict[str, int]:
+    """Counts the number of births and births with neural tube defects prevelant.
+    Parameters
+    ----------
+    pop
+        The population dataframe to be counted. It must contain sufficient
+        columns for any necessary filtering (e.g. the ``age`` column if
+        filtering by age).
+    config
+        A dict with ``by_age``, ``by_sex``, and ``by_year`` keys and
+        boolean values.
+    sim_start
+        The simulation start time.
+    sim_end
+        The simulation end time.
+    Returns
+    -------
+    births
+        All births and births with neural tube defects present.
+    """
+    base_filter = QueryString('')
+    base_key = get_output_template(**config)
+    time_spans = get_time_iterable(config, sim_start, sim_end)
+
+    births = {}
+    for year, (t_start, t_end) in time_spans:
+        start = max(sim_start, t_start)
+        end = min(sim_end, t_end)
+        born_in_span = pop.query(f'"{start}" <= entrance_time and entrance_time < "{end}"')
+
+        cat_year_key = base_key.substitute(measure='live_births', year=year)
+        filter = base_filter
+        group_births = get_group_counts(born_in_span, filter, cat_year_key, config, pd.DataFrame())
+        births.update(group_births)
+
+        cat_year_key = base_key.substitute(measure='born_with_ntds', year=year)
+        filter = base_filter + f'{project_globals.NTD_MODEL_NAME} == "{project_globals.NTD_MODEL_NAME}"'
+        empty_age_bins = pd.DataFrame()
+        group_ntd_births = get_group_counts(born_in_span, filter, cat_year_key, config, empty_age_bins)
+        births.update(group_ntd_births)
+    return births
+

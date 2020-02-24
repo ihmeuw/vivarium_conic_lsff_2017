@@ -17,7 +17,7 @@ components:
         - DiseaseObserver('diarrheal_diseases')
         - DiseaseObserver('measles')
         - DiseaseObserver('lower_respiratory_infections')
-        - DiseaseObserver('neural_tube_defects')
+        - LiveBirthWithNTDObserver()
 
 configuration:
     input_data:
