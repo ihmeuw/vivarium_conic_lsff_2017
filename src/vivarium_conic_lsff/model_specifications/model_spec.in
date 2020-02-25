@@ -42,17 +42,17 @@ configuration:
             day: 2
         step_size: 1 # Days
     population:
-        population_size: 100_000
+        population_size: 10_000
         age_start: 0
         age_end: 5
         exit_age: 5
 
     metrics:
         disability:
-            by_age: False
-            by_sex: False
-            by_year: False
+            by_age: True
+            by_sex: True
+            by_year: True
         mortality:
-            by_age: False
-            by_sex: False
-            by_year: False
+            by_age: True
+            by_sex: True
+            by_year: True
