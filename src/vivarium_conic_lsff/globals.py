@@ -76,8 +76,8 @@ DIARRHEA_SUSCEPTIBLE_STATE_NAME = f'susceptible_to_{DIARRHEA_MODEL_NAME}'
 DIARRHEA_WITH_CONDITION_STATE_NAME = DIARRHEA_MODEL_NAME
 DIARRHEA_MODEL_STATES = (DIARRHEA_SUSCEPTIBLE_STATE_NAME, DIARRHEA_WITH_CONDITION_STATE_NAME)
 DIARRHEA_MODEL_TRANSITIONS = (
-    f'{DIARRHEA_SUSCEPTIBLE_STATE_NAME}_TO_{DIARRHEA_WITH_CONDITION_STATE_NAME}',
-    f'{DIARRHEA_WITH_CONDITION_STATE_NAME}_TO_{DIARRHEA_SUSCEPTIBLE_STATE_NAME}',
+    f'{DIARRHEA_SUSCEPTIBLE_STATE_NAME}_to_{DIARRHEA_WITH_CONDITION_STATE_NAME}',
+    f'{DIARRHEA_WITH_CONDITION_STATE_NAME}_to_{DIARRHEA_SUSCEPTIBLE_STATE_NAME}',
 )
 
 MEASLES_MODEL_NAME = 'measles'
@@ -85,8 +85,8 @@ MEASLES_SUSCEPTIBLE_STATE_NAME = f'susceptible_to_{MEASLES_MODEL_NAME}'
 MEASLES_WITH_CONDITION_STATE_NAME = MEASLES_MODEL_NAME
 MEASLES_MODEL_STATES = (MEASLES_SUSCEPTIBLE_STATE_NAME, MEASLES_WITH_CONDITION_STATE_NAME)
 MEASLES_MODEL_TRANSITIONS = (
-    f'{MEASLES_SUSCEPTIBLE_STATE_NAME}_TO_{MEASLES_WITH_CONDITION_STATE_NAME}',
-    f'{MEASLES_WITH_CONDITION_STATE_NAME}_TO_{MEASLES_SUSCEPTIBLE_STATE_NAME}',
+    f'{MEASLES_SUSCEPTIBLE_STATE_NAME}_to_{MEASLES_WITH_CONDITION_STATE_NAME}',
+    f'{MEASLES_WITH_CONDITION_STATE_NAME}_to_{MEASLES_SUSCEPTIBLE_STATE_NAME}',
 )
 
 LRI_MODEL_NAME = 'lower_respiratory_infections'
@@ -94,8 +94,8 @@ LRI_SUSCEPTIBLE_STATE_NAME = f'susceptible_to_{LRI_MODEL_NAME}'
 LRI_WITH_CONDITION_STATE_NAME = LRI_MODEL_NAME
 LRI_MODEL_STATES = (LRI_SUSCEPTIBLE_STATE_NAME, LRI_WITH_CONDITION_STATE_NAME)
 LRI_MODEL_TRANSITIONS = (
-    f'{LRI_SUSCEPTIBLE_STATE_NAME}_TO_{LRI_WITH_CONDITION_STATE_NAME}',
-    f'{LRI_WITH_CONDITION_STATE_NAME}_TO_{LRI_SUSCEPTIBLE_STATE_NAME}',
+    f'{LRI_SUSCEPTIBLE_STATE_NAME}_to_{LRI_WITH_CONDITION_STATE_NAME}',
+    f'{LRI_WITH_CONDITION_STATE_NAME}_to_{LRI_SUSCEPTIBLE_STATE_NAME}',
 )
 
 NTD_MODEL_NAME = 'neural_tube_defects'
@@ -123,6 +123,9 @@ DISEASE_MODEL_MAP = {
         'transitions': (),
     },
 }
+
+STATES = tuple(state for model in DISEASE_MODELS for state in DISEASE_MODEL_MAP[model]['states'])
+TRANSITIONS = tuple(transition for model in DISEASE_MODELS for transition in DISEASE_MODEL_MAP[model]['transitions'])
 
 
 ########################
@@ -155,13 +158,23 @@ STANDARD_COLUMNS = {
     'total_ylds': TOTAL_YLDS_COLUMN,
 }
 
+# Columns from parallel runs
+INPUT_DRAW_COLUMN = 'input_draw'
+RANDOM_SEED_COLUMN = 'random_seed'
+
+THROWAWAY_COLUMNS = ([f'{state}_event_count' for state in STATES]
+                     + [f'{state}_prevalent_cases_at_sim_end' for state in STATES])
+
 TOTAL_POPULATION_COLUMN_TEMPLATE = 'total_population_{POP_STATE}'
 PERSON_TIME_COLUMN_TEMPLATE = 'person_time_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
 DEATH_COLUMN_TEMPLATE = 'death_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
 YLLS_COLUMN_TEMPLATE = 'ylls_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
 YLDS_COLUMN_TEMPLATE = 'ylds_due_to_{CAUSE_OF_DISABILITY}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
-STATE_PERSON_TIME_COLUMN_TEMPLATE = '{STATE}_person_time_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
+#STATE_PERSON_TIME_COLUMN_TEMPLATE = '{STATE}_person_time_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
+STATE_PERSON_TIME_COLUMN_TEMPLATE = '{STATE}_person_time'
 TRANSITION_COUNT_COLUMN_TEMPLATE = '{TRANSITION}_event_count_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
+BIRTHS_COLUMN_TEMPLATE = 'live_births_in_{YEAR}_among_{SEX}'
+BORN_WITH_NTD_COLUMN_TEMPLATE = 'born_with_ntds_in_{YEAR}_among_{SEX}'
 
 COLUMN_TEMPLATES = {
     'population': TOTAL_POPULATION_COLUMN_TEMPLATE,
@@ -171,25 +184,31 @@ COLUMN_TEMPLATES = {
     'ylds': YLDS_COLUMN_TEMPLATE,
     'state_person_time': STATE_PERSON_TIME_COLUMN_TEMPLATE,
     'transition_count': TRANSITION_COUNT_COLUMN_TEMPLATE,
+    'births': BIRTHS_COLUMN_TEMPLATE,
+    'born_with_ntd': BORN_WITH_NTD_COLUMN_TEMPLATE,
 }
+
+NON_COUNT_TEMPLATES = [
+]
 
 POP_STATES = ('living', 'dead', 'tracked', 'untracked')
 SEXES = ('male', 'female')
-# TODO - add literals for years in the model
-YEARS = ()
-# TODO - add literals for ages in the model
-AGE_GROUPS = ()
-# TODO - add causes of death
+YEARS = tuple(range(2020, 2025))
+AGE_GROUPS = ('early_neonatal', 'late_neonatal', 'post_neonatal', '1_to_4')
 CAUSES_OF_DEATH = (
     'other_causes',
     DIARRHEA_WITH_CONDITION_STATE_NAME,
+    MEASLES_WITH_CONDITION_STATE_NAME,
+    LRI_WITH_CONDITION_STATE_NAME,
+    NTD_WITH_CONDITION_STATE_NAME,
 )
-# TODO - add causes of disability
+
 CAUSES_OF_DISABILITY = (
     DIARRHEA_WITH_CONDITION_STATE_NAME,
+    MEASLES_WITH_CONDITION_STATE_NAME,
+    LRI_WITH_CONDITION_STATE_NAME,
+    NTD_WITH_CONDITION_STATE_NAME,
 )
-STATES = (state for model in DISEASE_MODELS for state in DISEASE_MODEL_MAP[model]['states'])
-TRANSITIONS = (transition for model in DISEASE_MODELS for transition in DISEASE_MODEL_MAP[model]['transitions'])
 
 TEMPLATE_FIELD_MAP = {
     'POP_STATE': POP_STATES,
@@ -219,4 +238,3 @@ def RESULT_COLUMNS(kind='all'):
         for value_group in value_groups:
             columns.append(template.format(**{field: value for field, value in zip(fields, value_group)}))
     return columns
-

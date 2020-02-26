@@ -56,3 +56,15 @@ configuration:
             by_age: True
             by_sex: True
             by_year: True
+        diarrheal_diseases_observer:
+            by_age: True
+            by_sex: True
+            by_year: True
+        measles_observer:
+            by_age: True
+            by_sex: True
+            by_year: True
+        lower_respiratory_infections_observer:
+            by_age: True
+            by_sex: True
+            by_year: True

@@ -125,7 +125,7 @@ def get_state_person_time(pop, config, disease, state, current_year, step_size, 
 
 
 def get_transition_count(pop, config, disease, transition, event_time, age_bins):
-    from_state, to_state = transition.split('_TO_')
+    from_state, to_state = transition.split('_to_')
     event_this_step = ((pop[f'{to_state}_event_time'] == event_time)
                        & (pop[f'previous_{disease}'] == from_state))
     transitioned_pop = pop.loc[event_this_step]

@@ -28,6 +28,7 @@ if __name__ == "__main__":
         'pandas<0.25',
         'scipy',
         'tables<=3.4.0',
+        'pyyaml'
     ]
 
     # use "pip install -e .[dev]" to install required components + extra components
@@ -63,5 +64,6 @@ if __name__ == "__main__":
             [console_scripts]
             make_specs=vivarium_conic_lsff.tools.cli:make_specs
             make_artifacts=vivarium_conic_lsff.tools.cli:make_artifacts
+            make_results=vivarium_conic_lsff.tools.cli:make_results
         '''
     )
