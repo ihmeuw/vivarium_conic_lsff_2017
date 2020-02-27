@@ -29,7 +29,7 @@ class Stratification:
             self._levels['age'] = ('age_group', 'in_age_group')
         if sex:
             self._levels['sex'] = ('sex', '_among_')
-        if age:
+        if year:
             self._levels['year'] = ('year', '_in_')
 
     @property
@@ -44,9 +44,8 @@ def make_measure_data(data):
         ylls=get_measure_data(data, 'ylls'),
         ylds=get_measure_data(data, 'ylds'),
         deaths=get_measure_data(data, 'deaths'),
-        state_person_time=get_measure_data(data, 'state_person_time', with_cause=False, state=True,
-                                           stratified=Stratification(age=False, sex=False, year=False)),
-        #transition_count=get_measure_data(data, 'transition_count', with_cause=False, transition=True)
+        state_person_time=get_measure_data(data, 'state_person_time', with_cause=False, state=True),
+        transition_count=get_measure_data(data, 'transition_count', with_cause=False, transition=True),
         births=get_measure_data(data, 'births', with_cause=False, state=False,
                                            stratified=Stratification(age=False, sex=True, year=True)),
         births_with_ntd=get_measure_data(data, 'born_with_ntd', with_cause=False, state=False,
@@ -72,7 +71,7 @@ class MeasureData(NamedTuple):
     ylds: pd.DataFrame
     deaths: pd.DataFrame
     state_person_time: pd.DataFrame
-    #transition_count: pd.DataFrame
+    transition_count: pd.DataFrame
     births: pd.DataFrame
     births_with_ntd: pd.DataFrame
 

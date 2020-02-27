@@ -170,8 +170,7 @@ PERSON_TIME_COLUMN_TEMPLATE = 'person_time_in_{YEAR}_among_{SEX}_in_age_group_{A
 DEATH_COLUMN_TEMPLATE = 'death_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
 YLLS_COLUMN_TEMPLATE = 'ylls_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
 YLDS_COLUMN_TEMPLATE = 'ylds_due_to_{CAUSE_OF_DISABILITY}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
-#STATE_PERSON_TIME_COLUMN_TEMPLATE = '{STATE}_person_time_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
-STATE_PERSON_TIME_COLUMN_TEMPLATE = '{STATE}_person_time'
+STATE_PERSON_TIME_COLUMN_TEMPLATE = '{STATE}_person_time_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
 TRANSITION_COUNT_COLUMN_TEMPLATE = '{TRANSITION}_event_count_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
 BIRTHS_COLUMN_TEMPLATE = 'live_births_in_{YEAR}_among_{SEX}'
 BORN_WITH_NTD_COLUMN_TEMPLATE = 'born_with_ntds_in_{YEAR}_among_{SEX}'
@@ -236,5 +235,5 @@ def RESULT_COLUMNS(kind='all'):
                               for field, values in TEMPLATE_FIELD_MAP.items() if f'{{{field}}}' in template}
         fields, value_groups = filtered_field_map.keys(), itertools.product(*filtered_field_map.values())
         for value_group in value_groups:
-            columns.append(template.format(**{field: value for field, value in zip(fields, value_group)}))
+            columns.append(template.format(**{field: value for field, value in zip(fields, value_group)}).lower())
     return columns
