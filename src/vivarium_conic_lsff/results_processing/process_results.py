@@ -24,17 +24,17 @@ DROP_COLUMNS = ['measure']
 
 class Stratification:
     def __init__(self, age=True, sex=True, year=True):
-        self._levels = {}
+        self._levels = []
         if age:
-            self._levels['age'] = ('age_group', 'in_age_group')
+            self._levels.append(('age_group', 'in_age_group'))
         if sex:
-            self._levels['sex'] = ('sex', '_among_')
+            self._levels.append(('sex', '_among_'))
         if year:
-            self._levels['year'] = ('year', '_in_')
+            self._levels.append(('year', '_in_'))
 
     @property
     def levels(self):
-        return self._levels.values()
+        return list(self._levels)
 
 
 def make_measure_data(data):
