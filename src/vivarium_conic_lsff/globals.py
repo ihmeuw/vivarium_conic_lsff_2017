@@ -67,6 +67,12 @@ NEURAL_TUBE_DEFECTS_EXCESS_MORTALITY_RATE = 'cause.neural_tube_defects.excess_mo
 NEURAL_TUBE_DEFECTS_DISABILITY_WEIGHT = 'cause.neural_tube_defects.disability_weight'
 NEURAL_TUBE_DEFECTS_RESTRICTIONS = 'cause.neural_tube_defects.restrictions'
 
+LBWSG_DISTRIBUTION = 'risk_factor.low_birth_weight_and_short_gestation.distribution'
+LBWSG_CATEGORIES = 'risk_factor.low_birth_weight_and_short_gestation.categories'
+LBWSG_EXPOSURE = 'risk_factor.low_birth_weight_and_short_gestation.exposure'
+LBWSG_RELATIVE_RISK = 'risk_factor.low_birth_weight_and_short_gestation.relative_risk'
+LBWSG_PAF = 'risk_factor.low_birth_weight_and_short_gestation.population_attributable_fraction'
+
 ###########################
 # Disease Model variables #
 ###########################

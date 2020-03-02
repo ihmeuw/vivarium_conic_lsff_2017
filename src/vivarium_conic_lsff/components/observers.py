@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Dict, List
+from typing import Dict
 
 import pandas as pd
 from vivarium_public_health.metrics.utilities import (get_output_template, get_group_counts,
