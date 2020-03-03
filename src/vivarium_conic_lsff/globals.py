@@ -137,8 +137,17 @@ TRANSITIONS = tuple(transition for model in DISEASE_MODELS for transition in DIS
 ########################
 # Risk Model Constants #
 ########################
-# TODO - remove if you don't need lbwsg
+
+########################
+# Risk Model Constants #
+########################
+
 LBWSG_MODEL_NAME = 'low_birth_weight_and_short_gestation'
+BIRTH_WEIGHT = 'birth_weight'
+GESTATION_TIME = 'gestation_time'
+LBWSG_COLUMNS = [BIRTH_WEIGHT, GESTATION_TIME]
+MAX_BIRTH_WEIGHT = 4500  # grams
+MAX_GESTATIONAL_TIME = 42  # weeks
 
 
 class __LBWSG_MISSING_CATEGORY(NamedTuple):

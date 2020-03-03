@@ -2,7 +2,6 @@ components:
     vivarium_public_health:
         population:
             - BasePopulation()
-            - Mortality()
             - FertilityCrudeBirthRate()
         disease.models:
             - SIS('diarrheal_diseases')
@@ -14,10 +13,16 @@ components:
             - MortalityObserver()
 
     vivarium_conic_lsff.components:
+        - Mortality()
+
         - DiseaseObserver('diarrheal_diseases')
         - DiseaseObserver('measles')
         - DiseaseObserver('lower_respiratory_infections')
         - LiveBirthWithNTDObserver()
+
+        - LBWSGRisk()
+        - LBWSGRiskEffect('cause.all_causes.mortality_hazard')
+
 
 configuration:
     input_data:
