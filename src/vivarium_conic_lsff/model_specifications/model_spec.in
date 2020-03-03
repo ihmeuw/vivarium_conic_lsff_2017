@@ -19,6 +19,7 @@ components:
         - DiseaseObserver('measles')
         - DiseaseObserver('lower_respiratory_infections')
         - LiveBirthWithNTDObserver()
+        - LBWSGObserver()
 
         - LBWSGRisk()
         - LBWSGRiskEffect('cause.all_causes.mortality_hazard')
