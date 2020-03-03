@@ -225,3 +225,46 @@ def get_births(pop: pd.DataFrame, config: Dict[str, bool], sim_start: pd.Timesta
         births.update(group_ntd_births)
     return births
 
+
+
+class LBWSGObserver:
+
+    @property
+    def name(self):
+        return f'risk_observer.low_birth_weight_and_short_gestation'
+
+    def setup(self, builder):
+        value_key = 'low_birth_weight_and_short_gestation.exposure'
+        self.lbwsg = builder.value.get_value(value_key)
+        builder.value.register_value_modifier('metrics', self.metrics)
+        self.results = {}
+        columns = ['sex']
+        self.population_view = builder.population.get_view(columns)
+        builder.population.initializes_simulants(self.on_initialize_simulants,
+                                                 requires_columns=columns,
+                                                 requires_values=[value_key])
+
+    def on_initialize_simulants(self, pop_data):
+        pop = self.population_view.get(pop_data.index)
+        raw_exposure = self.lbwsg(pop_data.index, skip_post_processor=True)
+        exposure = self.lbwsg(pop_data.index)
+        pop = pd.concat([pop, raw_exposure, exposure], axis=1)
+        stats = self.get_lbwsg_stats(pop)
+        self.results.update(stats)
+
+    def get_lbwsg_stats(self, pop):
+        stats = {'birth_weight_mean': 0,
+                 'birth_weight_sd': 0,
+                 'gestational_age_mean': 0,
+                 'gestational_age_sd': 0,
+                 }
+        if not pop.empty:
+            stats[f'birth_weight_mean'] = pop.birth_weight.mean()
+            stats[f'birth_weight_sd'] = pop.birth_weight.std()
+            stats[f'gestational_age_mean'] = pop.gestation_time.mean()
+            stats[f'gestational_age_sd'] = pop.gestation_time.std()
+        return stats
+
+    def metrics(self, index, metrics):
+        metrics.update(self.results)
+        return metrics
