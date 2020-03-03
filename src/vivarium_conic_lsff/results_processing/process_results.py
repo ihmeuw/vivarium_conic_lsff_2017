@@ -50,6 +50,10 @@ def make_measure_data(data):
                                            stratified=Stratification(age=False, sex=True, year=True)),
         births_with_ntd=get_measure_data(data, 'born_with_ntd', with_cause=False, state=False,
                                            stratified=Stratification(age=False, sex=True, year=True)),
+        birth_weight=get_measure_data(data, 'birth_weight', with_cause=False, state=False,
+                                stratified=Stratification(age=False, sex=False, year=False)),
+        gestational_age=get_measure_data(data, 'gestational_age', with_cause=False, state=False,
+                                stratified=Stratification(age=False, sex=False, year=False)),
     )
     return measure_data
 
@@ -74,6 +78,8 @@ class MeasureData(NamedTuple):
     transition_count: pd.DataFrame
     births: pd.DataFrame
     births_with_ntd: pd.DataFrame
+    birth_weight: pd.DataFrame
+    gestational_age: pd.DataFrame
 
     def dump(self, output_dir: Path):
         for key, df in self._asdict().items():
@@ -130,11 +136,11 @@ def aggregate_over_seed(data):
         non_count_columns += project_globals.RESULT_COLUMNS(non_count_template)
     count_columns = [c for c in data.columns if c not in non_count_columns + GROUPBY_COLUMNS]
 
-    # non_count_data = data[non_count_columns + GROUPBY_COLUMNS].groupby(GROUPBY_COLUMNS).mean()
+    non_count_data = data[non_count_columns + GROUPBY_COLUMNS].groupby(GROUPBY_COLUMNS).mean()
     count_data = data[count_columns + GROUPBY_COLUMNS].groupby(GROUPBY_COLUMNS).sum()
     return pd.concat([
         count_data,
-        # non_count_data
+        non_count_data
     ], axis=1).reset_index()
 
 

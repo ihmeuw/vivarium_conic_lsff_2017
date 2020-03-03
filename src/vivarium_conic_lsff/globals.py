@@ -189,6 +189,8 @@ STATE_PERSON_TIME_COLUMN_TEMPLATE = '{STATE}_person_time_in_{YEAR}_among_{SEX}_i
 TRANSITION_COUNT_COLUMN_TEMPLATE = '{TRANSITION}_event_count_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
 BIRTHS_COLUMN_TEMPLATE = 'live_births_in_{YEAR}_among_{SEX}'
 BORN_WITH_NTD_COLUMN_TEMPLATE = 'born_with_ntds_in_{YEAR}_among_{SEX}'
+BIRTH_WEIGHT_COLUMN_TEMPLATE = 'birth_weight_{STAT_STATE}'
+GESTATIONAL_AGE_COLUMN_TEMPLATE = 'gestational_age_{STAT_STATE}'
 
 COLUMN_TEMPLATES = {
     'population': TOTAL_POPULATION_COLUMN_TEMPLATE,
@@ -200,12 +202,17 @@ COLUMN_TEMPLATES = {
     'transition_count': TRANSITION_COUNT_COLUMN_TEMPLATE,
     'births': BIRTHS_COLUMN_TEMPLATE,
     'born_with_ntd': BORN_WITH_NTD_COLUMN_TEMPLATE,
+    'birth_weight': BIRTH_WEIGHT_COLUMN_TEMPLATE,
+    'gestational_age': GESTATIONAL_AGE_COLUMN_TEMPLATE,
 }
 
 NON_COUNT_TEMPLATES = [
+    'birth_weight',
+    'gestational_age'
 ]
 
 POP_STATES = ('living', 'dead', 'tracked', 'untracked')
+STAT_STATES = ('mean', 'sd')
 SEXES = ('male', 'female')
 YEARS = tuple(range(2020, 2025))
 AGE_GROUPS = ('early_neonatal', 'late_neonatal', 'post_neonatal', '1_to_4')
@@ -233,6 +240,7 @@ TEMPLATE_FIELD_MAP = {
     'CAUSE_OF_DISABILITY': CAUSES_OF_DISABILITY,
     'STATE': STATES,
     'TRANSITION': TRANSITIONS,
+    'STAT_STATE': STAT_STATES,
 }
 
 
