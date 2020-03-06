@@ -10,7 +10,6 @@ components:
             - NeonatalSWC_without_incidence('neural_tube_defects')
         metrics:
             - DisabilityObserver()
-            - MortalityObserver()
 
     vivarium_conic_lsff.components:
         - Mortality()
@@ -20,6 +19,7 @@ components:
         - DiseaseObserver('lower_respiratory_infections')
         - LiveBirthWithNTDObserver()
         - LBWSGObserver()
+        - MortalityObserver()
 
         - LBWSGRisk()
         - LBWSGRiskEffect('cause.all_causes.mortality_hazard')

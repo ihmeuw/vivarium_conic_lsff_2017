@@ -29,9 +29,11 @@ class LBWSGRisk:
         # names but that's too much to try to fix now.  We didn't build the
         # distribution class with clear enough boundaries to make the
         # distinction.
-        self.population_view = builder.population.get_view(project_globals.LBWSG_COLUMNS)
+        created_columns = [project_globals.BIRTH_WEIGHT_STATUS_COLUMN,
+                           project_globals.GESTATIONAL_AGE_STATUS_COLUMN] + project_globals.LBWSG_COLUMNS
+        self.population_view = builder.population.get_view(created_columns)
         builder.population.initializes_simulants(self.on_initialize_simulants,
-                                                 creates_columns=project_globals.LBWSG_COLUMNS,
+                                                 creates_columns=created_columns,
                                                  requires_columns=['age', 'sex'])
 
         self._raw_exposure = builder.value.register_value_producer(
@@ -47,11 +49,29 @@ class LBWSGRisk:
         )
 
     def on_initialize_simulants(self, pop_data):
+        def assign_bw_cat(val):
+            if val < project_globals.UNDERWEIGHT:
+                return project_globals.BIRTH_WEIGHT_UNDERWEIGHT
+            return project_globals.BIRTH_WEIGHT_NORMAL
+
+        def assign_ga_cat(val):
+            if val < project_globals.PRETERM:
+                return project_globals.GESTATIONAL_AGE_PRETERM
+            return project_globals.GESTATIONAL_AGE_NORMAL
+
         exposure = self.exposure_distribution.get_birth_weight_and_gestational_age(pop_data.index)
-        self.population_view.update(pd.DataFrame({
+
+        df = pd.DataFrame({
             project_globals.BIRTH_WEIGHT: exposure[project_globals.BIRTH_WEIGHT],
-            project_globals.GESTATION_TIME: exposure[project_globals.GESTATION_TIME]
-        }, index=pop_data.index))
+            project_globals.GESTATION_TIME: exposure[project_globals.GESTATION_TIME],
+            project_globals.BIRTH_WEIGHT_STATUS_COLUMN: exposure[project_globals.BIRTH_WEIGHT].apply(
+                lambda x: assign_bw_cat(x)
+            ),
+            project_globals.GESTATIONAL_AGE_STATUS_COLUMN: exposure[project_globals.GESTATION_TIME].apply(
+                lambda x: assign_ga_cat(x)
+            )
+        }, index=pop_data.index)
+        self.population_view.update(df)
 
 
 # FIXME: This class is not a clear representation of the lbwsg distribution.
