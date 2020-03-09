@@ -31,12 +31,12 @@ class MortalityObserver(MortalityObserver_):
         pop.loc[pop.exit_time.isnull(), 'exit_time'] = self.clock()
 
         exposure = self.exposure(index, skip_post_processor=True)
-        pop[project_globals.BIRTH_WEIGHT_STATUS_COLUMN] =\
-                np.where(exposure[project_globals.BIRTH_WEIGHT] < project_globals.UNDERWEIGHT,
-                         project_globals.BIRTH_WEIGHT_UNDERWEIGHT, project_globals.BIRTH_WEIGHT_NORMAL)
-        pop[project_globals.GESTATIONAL_AGE_STATUS_COLUMN] =\
-                np.where(exposure[project_globals.GESTATION_TIME] < project_globals.PRETERM,
-                         project_globals.GESTATIONAL_AGE_PRETERM, project_globals.GESTATIONAL_AGE_NORMAL)
+        pop[project_globals.BIRTH_WEIGHT_STATUS_COLUMN] = np.where(
+            exposure[project_globals.BIRTH_WEIGHT] < project_globals.UNDERWEIGHT,
+            project_globals.BIRTH_WEIGHT_UNDERWEIGHT, project_globals.BIRTH_WEIGHT_NORMAL)
+        pop[project_globals.GESTATIONAL_AGE_STATUS_COLUMN] = np.where(
+            exposure[project_globals.GESTATION_TIME] < project_globals.PRETERM,
+            project_globals.GESTATIONAL_AGE_PRETERM, project_globals.GESTATIONAL_AGE_NORMAL)
 
         measure_getters = (
             (get_person_time, ()),
