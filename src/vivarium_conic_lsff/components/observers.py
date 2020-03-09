@@ -17,13 +17,13 @@ class MortalityObserver(MortalityObserver_):
     def setup(self, builder):
         super().setup(builder)
         columns_required = ['tracked', 'alive', 'entrance_time', 'exit_time', 'cause_of_death',
-                            'years_of_life_lost', 'age', project_globals.BIRTH_WEIGHT, project_globals.GESTATION_TIME,
-                            project_globals.BIRTH_WEIGHT_STATUS_COLUMN, project_globals.GESTATIONAL_AGE_STATUS_COLUMN]
+                            'years_of_life_lost', 'age']
         if self.config.by_sex:
             columns_required += ['sex']
         self.age_bins = get_age_bins(builder)
         # Overwrites attribute set in parent class
         self.population_view = builder.population.get_view(columns_required)
+        self.exposure = builder.value.get_value(f'{project_globals.LBWSG_MODEL_NAME}.exposure')
 
     def metrics(self, index, metrics):
         pop = self.population_view.get(index)
@@ -35,10 +35,13 @@ class MortalityObserver(MortalityObserver_):
             (get_years_of_life_lost, (self.life_expectancy, project_globals.CAUSES_OF_DEATH)),
         )
 
+        bw_idx, ga_idx = self.get_bw_ga_indices(index)
+
         categories = product(project_globals.BIRTH_WEIGHT_CATEGORIES, project_globals.GESTATIONAL_AGE_CATEGORIES)
         for bw_cat, ga_cat in categories:
-            pop_in_group = pop.loc[(pop[project_globals.BIRTH_WEIGHT_STATUS_COLUMN] == bw_cat)
-                                   & (pop[project_globals.GESTATIONAL_AGE_STATUS_COLUMN] == ga_cat)]
+            a = pop[pop.tracked & bw_idx] == bw_cat
+            b = pop[pop.tracked & ga_idx] == ga_cat
+            pop_in_group = pop.loc[a & b]
             base_args = (pop_in_group, self.config.to_dict(), self.start_time, self.clock(), self.age_bins)
 
             for measure_getter, extra_args in measure_getters:
@@ -54,6 +57,22 @@ class MortalityObserver(MortalityObserver_):
         metrics['total_population_dead'] = len(the_dead)
 
         return metrics
+
+    def get_bw_ga_indices(self, index):
+        def assign_bw_cat(val):
+            if val < project_globals.UNDERWEIGHT:
+                return project_globals.BIRTH_WEIGHT_UNDERWEIGHT
+            return project_globals.BIRTH_WEIGHT_NORMAL
+
+        def assign_ga_cat(val):
+            if val < project_globals.PRETERM:
+                return project_globals.GESTATIONAL_AGE_PRETERM
+            return project_globals.GESTATIONAL_AGE_NORMAL
+
+        exposure = self.exposure(index, skip_post_processor=True)
+        bw_idx = exposure[project_globals.BIRTH_WEIGHT].apply(lambda x: assign_bw_cat(x)).index
+        ga_idx = exposure[project_globals.GESTATION_TIME].apply(lambda x: assign_ga_cat(x)).index
+        return bw_idx, ga_idx
 
 
 class DiseaseObserver:
