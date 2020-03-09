@@ -3,6 +3,7 @@ from itertools import product
 from typing import Dict
 
 import pandas as pd
+import numpy as np
 from vivarium_public_health.metrics import (MortalityObserver as MortalityObserver_)
 from vivarium_public_health.metrics.utilities import (get_output_template, get_group_counts,
                                                       QueryString, to_years, get_person_time,
@@ -29,19 +30,24 @@ class MortalityObserver(MortalityObserver_):
         pop = self.population_view.get(index)
         pop.loc[pop.exit_time.isnull(), 'exit_time'] = self.clock()
 
+        exposure = self.exposure(index, skip_post_processor=True)
+        pop[project_globals.BIRTH_WEIGHT_STATUS_COLUMN] =\
+                np.where(exposure[project_globals.BIRTH_WEIGHT] < project_globals.UNDERWEIGHT,
+                         project_globals.BIRTH_WEIGHT_UNDERWEIGHT, project_globals.BIRTH_WEIGHT_NORMAL)
+        pop[project_globals.GESTATIONAL_AGE_STATUS_COLUMN] =\
+                np.where(exposure[project_globals.GESTATION_TIME] < project_globals.PRETERM,
+                         project_globals.GESTATIONAL_AGE_PRETERM, project_globals.GESTATIONAL_AGE_NORMAL)
+
         measure_getters = (
             (get_person_time, ()),
             (get_deaths, (project_globals.CAUSES_OF_DEATH,)),
             (get_years_of_life_lost, (self.life_expectancy, project_globals.CAUSES_OF_DEATH)),
         )
 
-        bw_idx, ga_idx = self.get_bw_ga_indices(index)
-
         categories = product(project_globals.BIRTH_WEIGHT_CATEGORIES, project_globals.GESTATIONAL_AGE_CATEGORIES)
         for bw_cat, ga_cat in categories:
-            a = pop[pop.tracked & bw_idx] == bw_cat
-            b = pop[pop.tracked & ga_idx] == ga_cat
-            pop_in_group = pop.loc[a & b]
+            pop_in_group = pop.loc[(pop[project_globals.BIRTH_WEIGHT_STATUS_COLUMN] == bw_cat)
+                                   & (pop[project_globals.GESTATIONAL_AGE_STATUS_COLUMN] == ga_cat)]
             base_args = (pop_in_group, self.config.to_dict(), self.start_time, self.clock(), self.age_bins)
 
             for measure_getter, extra_args in measure_getters:
@@ -57,22 +63,6 @@ class MortalityObserver(MortalityObserver_):
         metrics['total_population_dead'] = len(the_dead)
 
         return metrics
-
-    def get_bw_ga_indices(self, index):
-        def assign_bw_cat(val):
-            if val < project_globals.UNDERWEIGHT:
-                return project_globals.BIRTH_WEIGHT_UNDERWEIGHT
-            return project_globals.BIRTH_WEIGHT_NORMAL
-
-        def assign_ga_cat(val):
-            if val < project_globals.PRETERM:
-                return project_globals.GESTATIONAL_AGE_PRETERM
-            return project_globals.GESTATIONAL_AGE_NORMAL
-
-        exposure = self.exposure(index, skip_post_processor=True)
-        bw_idx = exposure[project_globals.BIRTH_WEIGHT].apply(lambda x: assign_bw_cat(x)).index
-        ga_idx = exposure[project_globals.GESTATION_TIME].apply(lambda x: assign_ga_cat(x)).index
-        return bw_idx, ga_idx
 
 
 class DiseaseObserver:
