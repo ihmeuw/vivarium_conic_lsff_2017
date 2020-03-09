@@ -138,15 +138,13 @@ TRANSITIONS = tuple(transition for model in DISEASE_MODELS for transition in DIS
 # Risk Model Constants #
 ########################
 
-########################
-# Risk Model Constants #
-########################
-
 LBWSG_MODEL_NAME = 'low_birth_weight_and_short_gestation'
 BIRTH_WEIGHT = 'birth_weight'
 GESTATION_TIME = 'gestation_time'
 LBWSG_COLUMNS = [BIRTH_WEIGHT, GESTATION_TIME]
+UNDERWEIGHT = 2500  # grams
 MAX_BIRTH_WEIGHT = 4500  # grams
+PRETERM = 37  # weeks
 MAX_GESTATIONAL_TIME = 42  # weeks
 
 
@@ -157,6 +155,16 @@ class __LBWSG_MISSING_CATEGORY(NamedTuple):
 
 
 LBWSG_MISSING_CATEGORY = __LBWSG_MISSING_CATEGORY()
+
+BIRTH_WEIGHT_STATUS_COLUMN = 'underweight'
+BIRTH_WEIGHT_NORMAL = 'normal'
+BIRTH_WEIGHT_UNDERWEIGHT = 'underweight'
+BIRTH_WEIGHT_CATEGORIES = (BIRTH_WEIGHT_NORMAL, BIRTH_WEIGHT_UNDERWEIGHT)
+
+GESTATIONAL_AGE_STATUS_COLUMN = 'preterm'
+GESTATIONAL_AGE_NORMAL = 'normal'
+GESTATIONAL_AGE_PRETERM = 'preterm'
+GESTATIONAL_AGE_CATEGORIES = (GESTATIONAL_AGE_NORMAL, GESTATIONAL_AGE_PRETERM)
 
 
 #################################
@@ -212,7 +220,7 @@ NON_COUNT_TEMPLATES = [
 ]
 
 POP_STATES = ('living', 'dead', 'tracked', 'untracked')
-STAT_STATES = ('mean', 'sd')
+STAT_MEASURES = ('mean', 'sd')
 SEXES = ('male', 'female')
 YEARS = tuple(range(2020, 2025))
 AGE_GROUPS = ('early_neonatal', 'late_neonatal', 'post_neonatal', '1_to_4')
@@ -240,7 +248,7 @@ TEMPLATE_FIELD_MAP = {
     'CAUSE_OF_DISABILITY': CAUSES_OF_DISABILITY,
     'STATE': STATES,
     'TRANSITION': TRANSITIONS,
-    'STAT_STATE': STAT_STATES,
+    'STAT_STATE': STAT_MEASURES,
 }
 
 

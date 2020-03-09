@@ -1,11 +1,68 @@
 from collections import Counter
+from itertools import product
 from typing import Dict
 
 import pandas as pd
+import numpy as np
+from vivarium_public_health.metrics import (MortalityObserver as MortalityObserver_)
 from vivarium_public_health.metrics.utilities import (get_output_template, get_group_counts,
-                                                      QueryString, to_years, get_age_bins, get_time_iterable)
+                                                      QueryString, to_years, get_person_time,
+                                                      get_deaths, get_years_of_life_lost,
+                                                      get_age_bins, get_time_iterable)
 
 from vivarium_conic_lsff import globals as project_globals
+
+
+class MortalityObserver(MortalityObserver_):
+
+    def setup(self, builder):
+        super().setup(builder)
+        columns_required = ['tracked', 'alive', 'entrance_time', 'exit_time', 'cause_of_death',
+                            'years_of_life_lost', 'age']
+        if self.config.by_sex:
+            columns_required += ['sex']
+        self.age_bins = get_age_bins(builder)
+        # Overwrites attribute set in parent class
+        self.population_view = builder.population.get_view(columns_required)
+        self.exposure = builder.value.get_value(f'{project_globals.LBWSG_MODEL_NAME}.exposure')
+
+    def metrics(self, index, metrics):
+        pop = self.population_view.get(index)
+        pop.loc[pop.exit_time.isnull(), 'exit_time'] = self.clock()
+
+        exposure = self.exposure(index, skip_post_processor=True)
+        pop[project_globals.BIRTH_WEIGHT_STATUS_COLUMN] = np.where(
+            exposure[project_globals.BIRTH_WEIGHT] < project_globals.UNDERWEIGHT,
+            project_globals.BIRTH_WEIGHT_UNDERWEIGHT, project_globals.BIRTH_WEIGHT_NORMAL)
+        pop[project_globals.GESTATIONAL_AGE_STATUS_COLUMN] = np.where(
+            exposure[project_globals.GESTATION_TIME] < project_globals.PRETERM,
+            project_globals.GESTATIONAL_AGE_PRETERM, project_globals.GESTATIONAL_AGE_NORMAL)
+
+        measure_getters = (
+            (get_person_time, ()),
+            (get_deaths, (project_globals.CAUSES_OF_DEATH,)),
+            (get_years_of_life_lost, (self.life_expectancy, project_globals.CAUSES_OF_DEATH)),
+        )
+
+        categories = product(project_globals.BIRTH_WEIGHT_CATEGORIES, project_globals.GESTATIONAL_AGE_CATEGORIES)
+        for bw_cat, ga_cat in categories:
+            pop_in_group = pop.loc[(pop[project_globals.BIRTH_WEIGHT_STATUS_COLUMN] == bw_cat)
+                                   & (pop[project_globals.GESTATIONAL_AGE_STATUS_COLUMN] == ga_cat)]
+            base_args = (pop_in_group, self.config.to_dict(), self.start_time, self.clock(), self.age_bins)
+
+            for measure_getter, extra_args in measure_getters:
+                measure_data = measure_getter(*base_args, *extra_args)
+                measure_data = {f'{k}_birthweight_{bw_cat}_gestational_age_{ga_cat}': v
+                                for k, v in measure_data.items()}
+                metrics.update(measure_data)
+
+        the_living = pop[(pop.alive == 'alive') & pop.tracked]
+        the_dead = pop[pop.alive == 'dead']
+        metrics[project_globals.TOTAL_YLLS_COLUMN] = self.life_expectancy(the_dead.index).sum()
+        metrics['total_population_living'] = len(the_living)
+        metrics['total_population_dead'] = len(the_dead)
+
+        return metrics
 
 
 class DiseaseObserver:
@@ -255,14 +312,22 @@ class LBWSGObserver:
     def get_lbwsg_stats(self, pop):
         stats = {'birth_weight_mean': 0,
                  'birth_weight_sd': 0,
+                 'birth_weight_proportion_below_2500g': 0,
                  'gestational_age_mean': 0,
                  'gestational_age_sd': 0,
+                 'gestational_age_proportion_below_37w': 0,
                  }
         if not pop.empty:
             stats[f'birth_weight_mean'] = pop.birth_weight.mean()
             stats[f'birth_weight_sd'] = pop.birth_weight.std()
+            stats[f'birth_weight_proportion_below_2500g'] = (
+                    len(pop[pop.birth_weight < project_globals.UNDERWEIGHT]) / len(pop)
+            )
             stats[f'gestational_age_mean'] = pop.gestation_time.mean()
             stats[f'gestational_age_sd'] = pop.gestation_time.std()
+            stats[f'gestational_age_proportion_below_37w'] = (
+                    len(pop[pop.gestation_time < project_globals.PRETERM]) / len(pop)
+            )
         return stats
 
     def metrics(self, index, metrics):
