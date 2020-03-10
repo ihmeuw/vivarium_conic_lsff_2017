@@ -26,7 +26,7 @@ class Stratification:
     def __init__(self, age=True, sex=True, year=True):
         self._levels = []
         if age:
-            self._levels.append(('age_group', 'in_age_group'))
+            self._levels.append(('age_group', 'in_age_group_'))
         if sex:
             self._levels.append(('sex', '_among_'))
         if year:
