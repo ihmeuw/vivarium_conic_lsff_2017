@@ -15,7 +15,7 @@ for an example.
 import pandas as pd
 import numpy as np
 
-from gbd_mapping import causes, risk_factors, covariates
+from gbd_mapping import causes, risk_factors, covariates, sequelae
 from vivarium.framework.artifact import EntityKey
 from vivarium_inputs import interface, utilities, utility_data, globals as vi_globals
 from vivarium_inputs.mapping_extension import alternative_risk_factors
@@ -83,6 +83,19 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         project_globals.LBWSG_EXPOSURE: load_lbwsg_exposure,
         project_globals.LBWSG_RELATIVE_RISK: load_lbwsg_relative_risk,
         project_globals.LBWSG_PAF: load_lbwsg_paf,
+
+        project_globals.VITAMIN_A_DEFICIENCY_CATEGORIES: load_metadata,
+        project_globals.VITAMIN_A_DEFICIENCY_RESTRICTIONS: load_metadata,
+        project_globals.VITAMIN_A_DEFICIENCY_EXPOSURE: load_standard_data,
+        project_globals.VITAMIN_A_DEFICIENCY_RELATIVE_RISK: load_standard_data,
+        project_globals.VITAMIN_A_DEFICIENCY_PAF: load_standard_data,
+        project_globals.VITAMIN_A_SEQ_DW_MODERATE_VI: load_standard_data,
+        project_globals.VITAMIN_A_SEQ_DW_SEVERE_VI: load_standard_data,
+        project_globals.VITAMIN_A_SEQ_DW_BLIND_VI: load_standard_data,
+        project_globals.VITAMIN_A_SEQ_DW_ASYMPTOMATIC_VI: load_standard_data,
+        project_globals.VITAMIN_A_SEQ_DW_MILD_ANEMIA: load_standard_data,
+        project_globals.VITAMIN_A_SEQ_DW_MODERATE_ANEMIA: load_standard_data,
+        project_globals.VITAMIN_A_SEQ_DW_SEVERE_ANEMIA: load_standard_data,
     }
     return mapping[lookup_key](lookup_key, location)
 
@@ -228,7 +241,8 @@ def get_entity(key: str):
         'cause': causes,
         'covariate': covariates,
         'risk_factor': risk_factors,
-        'alternative_risk_factor': alternative_risk_factors
+        'alternative_risk_factor': alternative_risk_factors,
+        'sequela': sequelae
     }
     key = EntityKey(key)
     return type_map[key.type][key.name]
