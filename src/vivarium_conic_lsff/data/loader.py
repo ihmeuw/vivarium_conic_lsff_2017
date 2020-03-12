@@ -86,16 +86,10 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
 
         project_globals.VITAMIN_A_DEFICIENCY_CATEGORIES: load_metadata,
         project_globals.VITAMIN_A_DEFICIENCY_RESTRICTIONS: load_metadata,
+        project_globals.VITAMIN_A_DEFICIENCY_DISABILITY_WEIGHT: load_standard_data,
         project_globals.VITAMIN_A_DEFICIENCY_EXPOSURE: load_standard_data,
         project_globals.VITAMIN_A_DEFICIENCY_RELATIVE_RISK: load_standard_data,
         project_globals.VITAMIN_A_DEFICIENCY_PAF: load_standard_data,
-        project_globals.VITAMIN_A_SEQ_DW_MODERATE_VI: load_standard_data,
-        project_globals.VITAMIN_A_SEQ_DW_SEVERE_VI: load_standard_data,
-        project_globals.VITAMIN_A_SEQ_DW_BLIND_VI: load_standard_data,
-        project_globals.VITAMIN_A_SEQ_DW_ASYMPTOMATIC_VI: load_standard_data,
-        project_globals.VITAMIN_A_SEQ_DW_MILD_ANEMIA: load_standard_data,
-        project_globals.VITAMIN_A_SEQ_DW_MODERATE_ANEMIA: load_standard_data,
-        project_globals.VITAMIN_A_SEQ_DW_SEVERE_ANEMIA: load_standard_data,
     }
     return mapping[lookup_key](lookup_key, location)
 

@@ -219,12 +219,7 @@ def load_and_write_vitamin_a_deficiency_data(artifact: Artifact, location: str):
         project_globals.VITAMIN_A_DEFICIENCY_EXPOSURE,
         project_globals.VITAMIN_A_DEFICIENCY_RELATIVE_RISK,
         project_globals.VITAMIN_A_DEFICIENCY_PAF,
-        project_globals.VITAMIN_A_SEQ_DW_MODERATE_VI,
-        project_globals.VITAMIN_A_SEQ_DW_SEVERE_VI,
-        project_globals.VITAMIN_A_SEQ_DW_BLIND_VI,
-        project_globals.VITAMIN_A_SEQ_DW_ASYMPTOMATIC_VI,
-        project_globals.VITAMIN_A_SEQ_DW_MILD_ANEMIA,
-        project_globals.VITAMIN_A_SEQ_DW_MODERATE_ANEMIA,
+        project_globals.VITAMIN_A_DEFICIENCY_DISABILITY_WEIGHT,
     ]
 
     for key in keys:
