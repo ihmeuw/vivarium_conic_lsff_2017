@@ -210,3 +210,17 @@ def load_and_write_lbwsg_data(artifact: Artifact, location: str):
             data = loader.get_data(key, location)
             logger.debug(f'Writing data for {key} to artifact.')
             write_data_by_draw(artifact, key, data)
+
+
+def load_and_write_vitamin_a_deficiency_data(artifact: Artifact, location: str):
+    keys = [
+        project_globals.VITAMIN_A_DEFICIENCY_CATEGORIES,
+        project_globals.VITAMIN_A_DEFICIENCY_RESTRICTIONS,
+        project_globals.VITAMIN_A_DEFICIENCY_EXPOSURE,
+        project_globals.VITAMIN_A_DEFICIENCY_RELATIVE_RISK,
+        project_globals.VITAMIN_A_DEFICIENCY_PAF,
+        project_globals.VITAMIN_A_DEFICIENCY_DISABILITY_WEIGHT,
+    ]
+
+    for key in keys:
+        load_and_write_data(artifact, key, location)

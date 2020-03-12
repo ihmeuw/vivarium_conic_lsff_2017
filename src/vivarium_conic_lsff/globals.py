@@ -73,6 +73,14 @@ LBWSG_EXPOSURE = 'risk_factor.low_birth_weight_and_short_gestation.exposure'
 LBWSG_RELATIVE_RISK = 'risk_factor.low_birth_weight_and_short_gestation.relative_risk'
 LBWSG_PAF = 'risk_factor.low_birth_weight_and_short_gestation.population_attributable_fraction'
 
+# Note: no mortality associated with vitamin A deficiency in this model
+VITAMIN_A_DEFICIENCY_CATEGORIES = 'risk_factor.vitamin_a_deficiency.categories'
+VITAMIN_A_DEFICIENCY_EXPOSURE = 'risk_factor.vitamin_a_deficiency.exposure'
+VITAMIN_A_DEFICIENCY_RELATIVE_RISK = 'risk_factor.vitamin_a_deficiency.relative_risk'
+VITAMIN_A_DEFICIENCY_PAF = 'risk_factor.vitamin_a_deficiency.population_attributable_fraction'
+VITAMIN_A_DEFICIENCY_RESTRICTIONS = 'risk_factor.vitamin_a_deficiency.restrictions'
+VITAMIN_A_DEFICIENCY_DISABILITY_WEIGHT = 'cause.vitamin_a_deficiency.disability_weight'
+
 ###########################
 # Disease Model variables #
 ###########################
