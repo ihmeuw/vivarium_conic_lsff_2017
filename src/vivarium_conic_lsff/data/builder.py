@@ -219,6 +219,7 @@ def load_and_write_vitamin_a_deficiency_data(artifact: Artifact, location: str):
         project_globals.VITAMIN_A_DEFICIENCY_EXPOSURE,
         project_globals.VITAMIN_A_DEFICIENCY_RELATIVE_RISK,
         project_globals.VITAMIN_A_DEFICIENCY_PAF,
+        project_globals.VITAMIN_A_DEFICIENCY_DISTRIBUTION,
         project_globals.VITAMIN_A_DEFICIENCY_DISABILITY_WEIGHT,
     ]
 

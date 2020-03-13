@@ -24,6 +24,8 @@ components:
         - LBWSGRisk()
         - LBWSGRiskEffect('cause.all_causes.mortality_hazard')
 
+        - VitaminADeficiency()
+
 
 configuration:
     input_data:
