@@ -78,6 +78,7 @@ VITAMIN_A_DEFICIENCY_CATEGORIES = 'risk_factor.vitamin_a_deficiency.categories'
 VITAMIN_A_DEFICIENCY_EXPOSURE = 'risk_factor.vitamin_a_deficiency.exposure'
 VITAMIN_A_DEFICIENCY_RELATIVE_RISK = 'risk_factor.vitamin_a_deficiency.relative_risk'
 VITAMIN_A_DEFICIENCY_PAF = 'risk_factor.vitamin_a_deficiency.population_attributable_fraction'
+VITAMIN_A_DEFICIENCY_DISTRIBUTION = 'risk_factor.vitamin_a_deficiency.distribution'
 VITAMIN_A_DEFICIENCY_RESTRICTIONS = 'risk_factor.vitamin_a_deficiency.restrictions'
 VITAMIN_A_DEFICIENCY_DISABILITY_WEIGHT = 'cause.vitamin_a_deficiency.disability_weight'
 
@@ -117,6 +118,16 @@ NTD_OBSERVER = f'{NTD_MODEL_NAME}_births'
 NTD_SUSCEPTIBLE_STATE_NAME = f'susceptible_to_{NTD_MODEL_NAME}'
 NTD_WITH_CONDITION_STATE_NAME = NTD_MODEL_NAME
 NTD_MODEL_STATES = (NTD_SUSCEPTIBLE_STATE_NAME, NTD_WITH_CONDITION_STATE_NAME)
+
+VITAMIN_A_MODEL_NAME = 'vitamin_a_deficiency'
+VITAMIN_A_BAD = VITAMIN_A_MODEL_NAME
+VITAMIN_A_GOOD = f'susceptible_to_{VITAMIN_A_MODEL_NAME}'
+VITAMIN_A_BAD_EVENT_COUNT = f'{VITAMIN_A_MODEL_NAME}_event_count'
+VITAMIN_A_BAD_EVENT_TIME = f'{VITAMIN_A_MODEL_NAME}_event_time'
+VITAMIN_A_GOOD_EVENT_COUNT = f'{VITAMIN_A_GOOD}_event_count'
+VITAMIN_A_GOOD_EVENT_TIME = f'{VITAMIN_A_GOOD}_event_time'
+VITAMIN_A_PROPENSITY = f'{VITAMIN_A_MODEL_NAME}_propensity'
+
 
 DISEASE_MODELS = (DIARRHEA_MODEL_NAME, MEASLES_MODEL_NAME, LRI_MODEL_NAME)
 DISEASE_MODEL_MAP = {

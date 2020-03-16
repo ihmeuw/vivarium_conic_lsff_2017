@@ -90,6 +90,7 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         project_globals.VITAMIN_A_DEFICIENCY_EXPOSURE: load_standard_data,
         project_globals.VITAMIN_A_DEFICIENCY_RELATIVE_RISK: load_standard_data,
         project_globals.VITAMIN_A_DEFICIENCY_PAF: load_standard_data,
+        project_globals.VITAMIN_A_DEFICIENCY_DISTRIBUTION: load_metadata,
     }
     return mapping[lookup_key](lookup_key, location)
 
