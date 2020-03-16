@@ -38,6 +38,8 @@ class VitaminADeficiency:
 
         - exposes a pipeline for producing and changing disability weights
     '''
+
+    # RiskEffect requires this block
     configuration_defaults = {
         project_globals.VITAMIN_A_MODEL_NAME: {
             "exposure": 'data',
