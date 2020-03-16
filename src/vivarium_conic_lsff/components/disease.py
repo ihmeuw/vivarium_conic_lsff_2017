@@ -12,13 +12,48 @@ if typing.TYPE_CHECKING:
 
 
 class VitaminADeficiency:
+    '''
+    Model Vitamin A deficiency (VAD).
+
+    VAD is a disease fully attributed by a risk. The clinical definition
+    of the with-condition state corresponds to a particular exposure of a risk.
+    VAD is a categorical risk with 'cat1' denoting with-condition and
+    'cat2' being without-condition. There is no mortality associated with VAD.
+
+    This class fulfills requirements for Disease model, Disease state, and risk. The
+    following qualities show this.
+
+    Risk:
+        - exposes pipelines for "exposure_parameters" and "exposure_parameters_paf"
+          to satisfy requirements for a risk distribution.
+
+        - provides an "exposure" pipeline to fulfill risk requirements
+
+    Disease Model/State:
+        - adds the state name to the state column for disease state
+
+        - creates event_count and event_time columns for disease state
+
+        - initializes simulants
+
+        - exposes a pipeline for producing and changing disability weights
+    '''
+    configuration_defaults = {
+        project_globals.VITAMIN_A_MODEL_NAME: {
+            "exposure": 'data',
+            "rebinned_exposed": [],
+            "category_thresholds": [],
+        }
+    }
 
     @property
     def name(self):
         return project_globals.VITAMIN_A_MODEL_NAME
 
     def setup(self, builder: 'Builder'):
-        columns_created = [self.name, 
+        self.clock = builder.time.clock()
+
+        columns_created = [self.name,
                            project_globals.VITAMIN_A_GOOD_EVENT_TIME, project_globals.VITAMIN_A_GOOD_EVENT_COUNT,
                            project_globals.VITAMIN_A_BAD_EVENT_TIME, project_globals.VITAMIN_A_BAD_EVENT_COUNT,
                            project_globals.VITAMIN_A_PROPENSITY]
@@ -32,8 +67,6 @@ class VitaminADeficiency:
                                                  requires_streams=[f'{self.name}_initial_states'])
 
         self.randomness = builder.randomness.get_stream(f'{self.name}_initial_states')
-
-        self.clock = builder.time.clock()
 
         disability_weight_data = builder.data.load(project_globals.VITAMIN_A_DEFICIENCY_DISABILITY_WEIGHT)
 
