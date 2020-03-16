@@ -12,7 +12,7 @@ if typing.TYPE_CHECKING:
 
 
 class VitaminADeficiency:
-    '''
+    """
     Model Vitamin A deficiency (VAD).
 
     VAD is a disease fully attributed by a risk. The clinical definition
@@ -29,7 +29,7 @@ class VitaminADeficiency:
 
         - provides an "exposure" pipeline to fulfill risk requirements
 
-    Disease Model/State:
+    Disease Model:
         - adds the state name to the state column for disease state
 
         - creates event_count and event_time columns for disease state
@@ -37,7 +37,7 @@ class VitaminADeficiency:
         - initializes simulants
 
         - exposes a pipeline for producing and changing disability weights
-    '''
+    """
 
     # RiskEffect requires this block
     configuration_defaults = {
