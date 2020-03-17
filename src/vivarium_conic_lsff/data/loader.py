@@ -17,9 +17,7 @@ import numpy as np
 
 from gbd_mapping import causes, risk_factors, covariates, sequelae
 from vivarium.framework.artifact import EntityKey
-from vivarium_gbd_access import gbd
-from vivarium_gbd_access.utilities import get_draws
-from vivarium_inputs import interface, utilities, utility_data, globals as vi_globals
+from vivarium_inputs import interface, utilities, utility_data, globals as vi_globals, extract
 from vivarium_inputs.mapping_extension import alternative_risk_factors
 import vivarium_inputs.validation.sim as validation
 
@@ -269,11 +267,17 @@ def load_no_anemia_iron_responsive_proportion(key: str, location: str):
     all_prevalence = []
     iron_responsive_prevalence = []
     for sequela in responsive_sequelae:
-        prevalence = interface.get_measure(sequela, 'prevalence', location)
+        try:
+            prevalence = interface.get_measure(sequela, 'prevalence', location)
+        except extract.DataDoesNotExistError:
+            continue
         all_prevalence.append(prevalence)
         iron_responsive_prevalence.append(prevalence)
     for sequela in non_responsive_sequelae:
-        prevalence = interface.get_measure(sequela, 'prevalence', location)
+        try:
+            prevalence = interface.get_measure(sequela, 'prevalence', location)
+        except extract.DataDoesNotExistError:
+            continue
         all_prevalence.append(prevalence)
     all_prevalence = sum(all_prevalence)
     iron_responsive_prevalence = sum(iron_responsive_prevalence)
@@ -307,7 +311,11 @@ def load_iron_responsive_proportion(key: str, location: str):
             sequela = sequela.pop()
         else:
             continue
-        responsive_prevalence.append(interface.get_measure(sequela, 'prevalence', location))
+        try:
+            prevalence = interface.get_measure(sequela, 'prevalence', location)
+        except extract.DataDoesNotExistError:
+            continue
+        responsive_prevalence.append(prevalence)
     responsive_prevalence = sum(responsive_prevalence)
 
     non_responsive_prevalence = []
@@ -317,7 +325,11 @@ def load_iron_responsive_proportion(key: str, location: str):
             sequela = sequela.pop()
         else:
             continue
-        non_responsive_prevalence.append(interface.get_measure(sequela, 'prevalence', location))
+        try:
+            prevalence = interface.get_measure(sequela, 'prevalence', location)
+        except extract.DataDoesNotExistError:
+            continue
+        non_responsive_prevalence.append(prevalence)
     non_responsive_prevalence = sum(non_responsive_prevalence)
 
     return responsive_prevalence / (responsive_prevalence + non_responsive_prevalence)
