@@ -116,7 +116,7 @@ class VitaminADeficiency:
         propensity = self.randomness.get_draw(pop_data.index)
 
         exposure = self._get_sample_exposure(propensity)
-        disease_status = exposure.map({'cat1': project_globals.VITAMIN_A_BAD, 'cat2': project_globals.VITAMIN_A_GOOD})
+        disease_status = exposure.map({'cat1': project_globals.VITAMIN_A_WITH_CONDITION_STATE_NAME, 'cat2': project_globals.VITAMIN_A_SUSCEPTIBLE_STATE_NAME})
         pop_update = pd.DataFrame({
             self.name: disease_status,
             project_globals.VITAMIN_A_BAD_EVENT_TIME: pd.NaT,
@@ -131,14 +131,14 @@ class VitaminADeficiency:
         pop = self.population_view.get(event.index)
         exposure = self.exposure(event.index)
 
-        current_disease_status = exposure.map({'cat1': project_globals.VITAMIN_A_BAD,
-                                               'cat2': project_globals.VITAMIN_A_GOOD})
+        current_disease_status = exposure.map({'cat1': project_globals.VITAMIN_A_WITH_CONDITION_STATE_NAME,
+                                               'cat2': project_globals.VITAMIN_A_SUSCEPTIBLE_STATE_NAME})
         old_disease_status = pop[self.name]
 
-        incident_cases = ((old_disease_status == project_globals.VITAMIN_A_GOOD)
-                          & (current_disease_status == project_globals.VITAMIN_A_BAD))
-        remitted_cases = ((old_disease_status == project_globals.VITAMIN_A_GOOD)
-                          & (current_disease_status == project_globals.VITAMIN_A_BAD))
+        incident_cases = ((old_disease_status == project_globals.VITAMIN_A_SUSCEPTIBLE_STATE_NAME)
+                          & (current_disease_status == project_globals.VITAMIN_A_WITH_CONDITION_STATE_NAME))
+        remitted_cases = ((old_disease_status == project_globals.VITAMIN_A_SUSCEPTIBLE_STATE_NAME)
+                          & (current_disease_status == project_globals.VITAMIN_A_WITH_CONDITION_STATE_NAME))
 
         pop[self.name] = current_disease_status
         pop.loc[incident_cases, project_globals.VITAMIN_A_BAD_EVENT_TIME] = event.time
