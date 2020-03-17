@@ -62,6 +62,9 @@ class DisabilityObserver(DisabilityObserver_):
             ylds_this_step = get_years_lived_with_disability(pop_in_group, self.config.to_dict(),
                                                              self.clock().year, self.step_size(),
                                                              self.age_bins, self.disability_weight_pipelines, self.causes)
+
+            ylds_this_step = {f'{k}_vitamin_a_{vitamin_a_cat}_anemia_{anemia_group}': v
+                            for k, v in ylds_this_step.items()}
             self.years_lived_with_disability.update(ylds_this_step)
 
         pop.loc[:, 'years_lived_with_disability'] += self.disability_weight(pop.index)
@@ -210,6 +213,8 @@ class DiseaseObserver:
             for state in self.states:
                 state_person_time_this_step = get_state_person_time(pop_in_group, self.config, self.disease, state,
                                                                     self.clock().year, event.step_size, self.age_bins)
+                state_person_time_this_step = {f'{k}_vitamin_a_{vitamin_a_cat}_anemia_{anemia_group}': v
+                                               for k, v in state_person_time_this_step.items()}
                 self.person_time.update(state_person_time_this_step)
 
         # This enables tracking of transitions between states
@@ -229,6 +234,8 @@ class DiseaseObserver:
             for transition in self.transitions:
                 transition_counts_this_step = get_transition_count(pop_in_group, self.config, self.disease, transition,
                                                                    event.time, self.age_bins)
+                transition_counts_this_step = {f'{k}_vitamin_a_{vitamin_a_cat}_anemia_{anemia_group}': v
+                                               for k, v in transition_counts_this_step.items()}
                 self.counts.update(transition_counts_this_step)
 
     def metrics(self, index, metrics):

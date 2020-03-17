@@ -533,7 +533,7 @@ THROWAWAY_COLUMNS = ([f'{state}_event_count' for state in STATES]
                      + [f'{state}_prevalent_cases_at_sim_end' for state in STATES])
 
 TOTAL_POPULATION_COLUMN_TEMPLATE = 'total_population_{POP_STATE}'
-PERSON_TIME_COLUMN_TEMPLATE = 'person_time_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_birthweight_{BIRTH_WEIGHT_STATE}_gestational_age_{GESTATIONAL_AGE_STATE}'
+PERSON_TIME_COLUMN_TEMPLATE = 'person_time_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_'
 DEATH_COLUMN_TEMPLATE = 'death_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_birthweight_{BIRTH_WEIGHT_STATE}_gestational_age_{GESTATIONAL_AGE_STATE}'
 YLLS_COLUMN_TEMPLATE = 'ylls_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_birthweight_{BIRTH_WEIGHT_STATE}_gestational_age_{GESTATIONAL_AGE_STATE}'
 YLDS_COLUMN_TEMPLATE = 'ylds_due_to_{CAUSE_OF_DISABILITY}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
