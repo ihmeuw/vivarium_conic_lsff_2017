@@ -97,7 +97,6 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         project_globals.IRON_DEFICIENCY_EXPOSURE: load_standard_data,
         project_globals.IRON_DEFICIENCY_RESTRICTIONS: load_metadata,
         project_globals.IRON_DEFICIENCY_EXPOSURE_SD: load_standard_data,
-        project_globals.IRON_DEFICIENCY_TMRED: load_iron_deficiency_tmred,
         project_globals.IRON_DEFICIENCY_MILD_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
         project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
         project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
@@ -281,20 +280,6 @@ def load_iron_responsive_proportion(key: str, location: str):
     non_responsive_prevalence = sum(non_responsive_prevalence)
 
     return responsive_prevalence / (responsive_prevalence + non_responsive_prevalence)
-
-
-def load_iron_deficiency_tmred(key: str, location: str):
-
-    data = get_draws(gbd_id_type='rei_id',
-                     gbd_id=risk_factors.iron_deficiency.gbd_id,
-                     source='exposure',
-                     location_id=utility_data.get_location_id(location),
-                     sex_id=gbd.MALE + gbd.FEMALE,
-                     age_group_id=gbd.get_age_group_id(),
-                     gbd_round_id=gbd.GBD_ROUND_ID,
-                     status='best')
-    data['rei_id'] = risk_factors.iron_deficiency.gbd_id
-    return data
 
 
 def get_entity(key: str):
