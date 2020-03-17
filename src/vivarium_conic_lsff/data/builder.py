@@ -92,6 +92,7 @@ def write_data(artifact: Artifact, key: str, data: pd.DataFrame):
         artifact.write(key, data)
     return artifact.load(key)
 
+
 # TODO - writing and reading by draw is necessary if you are using
 #        LBWSG data. Find the read function in utilities.py
 def write_data_by_draw(artifact: Artifact, key: str, data: pd.DataFrame):
