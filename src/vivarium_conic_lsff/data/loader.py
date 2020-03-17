@@ -91,6 +91,17 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         project_globals.VITAMIN_A_DEFICIENCY_RELATIVE_RISK: load_standard_data,
         project_globals.VITAMIN_A_DEFICIENCY_PAF: load_standard_data,
         project_globals.VITAMIN_A_DEFICIENCY_DISTRIBUTION: load_metadata,
+
+        project_globals.IRON_DEFICIENCY_EXPOSURE: load_standard_data,
+        project_globals.IRON_DEFICIENCY_RESTRICTIONS: load_metadata,
+        project_globals.IRON_DEFICIENCY_EXPOSURE_SD: load_standard_data,
+        project_globals.IRON_DEFICIENCY_MILD_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
+        project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
+        project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
+        project_globals.IRON_DEFICIENCY_MILD_ANEMIA_IRON_RESPONSIVE_PROPORTION: load_iron_responsive_proportion,
+        project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_IRON_RESPONSIVE_PROPORTION: load_iron_responsive_proportion,
+        project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_IRON_RESPONSIVE_PROPORTION: load_iron_responsive_proportion,
+
     }
     return mapping[lookup_key](lookup_key, location)
 
@@ -228,6 +239,42 @@ def load_lbwsg_paf(key: str, location: str):
     data = utilities.split_interval(data, interval_column='age', split_column_prefix='age')
     data = utilities.split_interval(data, interval_column='year', split_column_prefix='year')
     return utilities.sort_hierarchical_data(data)
+
+
+def load_iron_deficiency_dw(key: str, location: str):
+    sequela_map = {
+        project_globals.IRON_DEFICIENCY_MILD_ANEMIA_DISABILITY_WEIGHT: 'sequela.mild_iron_deficiency_anemia.disability_weight',
+        project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_DISABILITY_WEIGHT: 'sequela.moderate_iron_deficiency_anemia.disability_weight' ,
+        project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_DISABILITY_WEIGHT: 'sequela.severe_iron_deficiency_anemia.disability_weight',
+    }
+    data_key = sequela_map[key]
+    return load_standard_data(data_key, location)
+
+
+def load_iron_responsive_proportion(key: str, location: str):
+    sequela_map = {
+        project_globals.IRON_DEFICIENCY_MILD_ANEMIA_IRON_RESPONSIVE_PROPORTION: 
+            project_globals.ANEMIA_SEQUELAE_ID_MAP['mild'],
+        project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_IRON_RESPONSIVE_PROPORTION:
+            project_globals.ANEMIA_SEQUELAE_ID_MAP['moderate'],
+        project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_IRON_RESPONSIVE_PROPORTION:
+            project_globals.ANEMIA_SEQUELAE_ID_MAP['severe'],
+    }
+    responsive_ids, non_responsive_ids = sequela_map[key]
+
+    responsive_prevalence = []
+    for id in responsive_ids:
+        sequela = [s for s in sequelae if s.gbd_id == id].pop()
+        responsive_prevalence.append(interface.get_measure(sequela, 'prevalence', location))
+    responsive_prevalence = sum(responsive_prevalence)
+
+    non_responsive_prevalence = []
+    for id in non_responsive_ids:
+        sequela = [s for s in sequelae if s.gbd_id == id].pop()
+        non_responsive_prevalence.append(interface.get_measure(sequela, 'prevalence', location))
+    non_responsive_prevalence = sum(non_responsive_prevalence)
+
+    return responsive_prevalence / (responsive_prevalence + non_responsive_prevalence)
 
 
 def get_entity(key: str):

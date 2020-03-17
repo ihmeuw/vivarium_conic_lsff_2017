@@ -82,6 +82,125 @@ VITAMIN_A_DEFICIENCY_DISTRIBUTION = 'risk_factor.vitamin_a_deficiency.distributi
 VITAMIN_A_DEFICIENCY_RESTRICTIONS = 'risk_factor.vitamin_a_deficiency.restrictions'
 VITAMIN_A_DEFICIENCY_DISABILITY_WEIGHT = 'cause.vitamin_a_deficiency.disability_weight'
 
+IRON_DEFICIENCY_EXPOSURE = 'risk_factor.iron_deficiency.exposure'
+IRON_DEFICIENCY_EXPOSURE_SD = 'risk_factor.iron_deficiency.exposure_sd'
+IRON_DEFICIENCY_TMRED = 'risk_factor.iron_deficiency.tmred'
+
+IRON_DEFICIENCY_MILD_ANEMIA_IRON_RESPONSIVE_PROPORTION = 'risk_factor.iron_deficiency.mild_anemia_iron_responsive_proportion'
+IRON_DEFICIENCY_MODERATE_ANEMIA_IRON_RESPONSIVE_PROPORTION = 'risk_factor.iron_deficiency.moderate_anemia_iron_responsive_proportion'
+IRON_DEFICIENCY_SEVERE_ANEMIA_IRON_RESPONSIVE_PROPORTION = 'risk_factor.iron_deficiency.severe_anemia_iron_responsive_proportion'
+
+IRON_DEFICIENCY_MILD_ANEMIA_DISABILITY_WEIGHT = 'risk_factor.iron_deficiency.mild_anemia_disability_weight'
+IRON_DEFICIENCY_MODERATE_ANEMIA_DISABILITY_WEIGHT = 'risk_factor.iron_deficiency.moderate_anemia_disability_weight'
+IRON_DEFICIENCY_SEVERE_ANEMIA_DISABILITY_WEIGHT = 'risk_factor.iron_deficiency.severe_anemia_disability_weight'
+
+IRON_DEFICIENCY_RESTRICTIONS = 'risk_factor.iron_deficiency.restrictions'
+
+ANEMIA_SEQUELAE_ID_MAP = {
+    'mild': (
+        # responsive
+        [
+            144,
+            172,
+            177,
+            182,
+            206,
+            240,
+            438,
+            442,
+            525,
+            537,
+            1004,
+            1008,
+            1012,
+            1016,
+            1020,
+            1024,
+            1028,
+            1032,
+            1106,
+            1361,
+            1373,
+            1385,
+            1397,
+            1409,
+            1421,
+            1433,
+            1445,
+            4952,
+            4955,
+            4976,
+            4985,
+            4988,
+            5009,
+            5225,
+            5228,
+            5249,
+            5252,
+            5273,
+            5276,
+            5393,
+            5567,
+            5579,
+            5627,
+            5648,
+            5651,
+            5654,
+            5678,
+            5699,
+            5702,
+            7202,
+            7214,
+            22989,
+            22990,
+            22991,
+            22992,
+            22993,
+            23030,
+            23034,
+            23038,
+            23042,
+            23046        ],
+        # non_responsive
+        [
+            531,
+            645,
+            648,
+            651,
+            654,
+            1057,
+            1061,
+            1065,
+            1069,
+            1079,
+            1089,
+            1099,
+            1120,
+            5018,
+            5027,
+            5036,
+            5051,
+            5063,
+            5075,
+            5087,
+            5099,
+            5111,
+            5123,
+            5606,
+            5705,
+        ]
+    ),
+    'moderate':{
+
+    },
+    'severe':{
+
+    }
+}
+
+
+
+
 ###########################
 # Disease Model variables #
 ###########################
