@@ -289,7 +289,8 @@ def load_no_anemia_iron_responsive_proportion(key: str, location: str):
     malaria_prevalence = interface.get_measure(causes.malaria, 'prevalence', location)
     reverse_causal_prevalence = other_anemias_prevalence + hiv_prevalence + malaria_prevalence
 
-    proportion = 1 - all_prevalence - (reverse_causal_prevalence - non_responsive_prevalence)/(1 - all_prevalence)
+    proportion = (1 - all_prevalence
+                  - (reverse_causal_prevalence - non_responsive_prevalence)/(1 - all_prevalence)).fillna(0)
     return proportion
 
 
@@ -332,7 +333,7 @@ def load_iron_responsive_proportion(key: str, location: str):
         non_responsive_prevalence.append(prevalence)
     non_responsive_prevalence = sum(non_responsive_prevalence)
 
-    return responsive_prevalence / (responsive_prevalence + non_responsive_prevalence)
+    return (responsive_prevalence / (responsive_prevalence + non_responsive_prevalence)).fillna(0)
 
 
 def get_entity(key: str):
