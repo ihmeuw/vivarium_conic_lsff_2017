@@ -211,6 +211,9 @@ class IronDeficiency:
                                                               source=self.get_exposure,
                                                               requires_values=[f'{self.name}.exposure_parameters'])
 
+        self.severity = builder.value.register_value_producer('anemia_severity',
+                                                              source=self.get_severity)
+
         self.population_view = builder.population.get_view(columns_created + columns_required)
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  creates_columns=columns_created,
@@ -232,10 +235,8 @@ class IronDeficiency:
 
     def get_disability_weight(self, index):
         disability_data = self.raw_disability_weight(index)
-        exposure = self.exposure(index)
-        severity = self._get_severity(exposure)
+        severity = self.severity(index)
         disability_weight = pd.Series(disability_data.lookup(index, severity), index=index)
-
         return disability_weight
 
     def get_iron_responsive(self, index):
@@ -243,12 +244,17 @@ class IronDeficiency:
                       .subview(['iron_responsiveness_propensity'])
                       .get(index)
                       .iron_responsiveness_propensity)
-        exposure = self.exposure(index)
-        severity = self._get_severity(exposure)
+        severity = self.severity(index)
         threshold = pd.Series(self.thresholds(index).lookup(index, severity), index=index)
         iron_responsive = propensity < threshold
         iron_responsive.name = 'iron_responsive'
         return iron_responsive
+
+    def get_severity(self, index):
+        exposure = self.exposure(index)
+        severity = self._get_severity(exposure)
+        severity.name = 'anemia_severity'
+        return severity
 
     def _compute_exposure(self, propensity):
         return self._distribution.ppf(propensity)
