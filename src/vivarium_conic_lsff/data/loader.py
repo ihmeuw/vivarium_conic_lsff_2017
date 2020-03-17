@@ -269,14 +269,14 @@ def load_no_anemia_iron_responsive_proportion(key: str, location: str):
     for sequela in responsive_sequelae:
         try:
             prevalence = interface.get_measure(sequela, 'prevalence', location)
-        except extract.DataDoesNotExistError:
+        except (extract.DataDoesNotExistError, extract.DataAbnormalError):
             continue
         all_prevalence.append(prevalence)
         iron_responsive_prevalence.append(prevalence)
     for sequela in non_responsive_sequelae:
         try:
             prevalence = interface.get_measure(sequela, 'prevalence', location)
-        except extract.DataDoesNotExistError:
+        except (extract.DataDoesNotExistError, extract.DataAbnormalError):
             continue
         all_prevalence.append(prevalence)
     all_prevalence = sum(all_prevalence)
@@ -314,7 +314,7 @@ def load_iron_responsive_proportion(key: str, location: str):
             continue
         try:
             prevalence = interface.get_measure(sequela, 'prevalence', location)
-        except extract.DataDoesNotExistError:
+        except (extract.DataDoesNotExistError, extract.DataAbnormalError):
             continue
         responsive_prevalence.append(prevalence)
     responsive_prevalence = sum(responsive_prevalence)
@@ -328,7 +328,7 @@ def load_iron_responsive_proportion(key: str, location: str):
             continue
         try:
             prevalence = interface.get_measure(sequela, 'prevalence', location)
-        except extract.DataDoesNotExistError:
+        except (extract.DataDoesNotExistError, extract.DataAbnormalError):
             continue
         non_responsive_prevalence.append(prevalence)
     non_responsive_prevalence = sum(non_responsive_prevalence)
