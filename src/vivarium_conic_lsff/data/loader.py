@@ -302,13 +302,21 @@ def load_iron_responsive_proportion(key: str, location: str):
 
     responsive_prevalence = []
     for s_id in responsive_ids:
-        sequela = [s for s in sequelae if s.gbd_id == s_id].pop()
+        sequela = [s for s in sequelae if s.gbd_id == s_id]
+        if sequela:
+            sequela = sequela.pop()
+        else:
+            continue
         responsive_prevalence.append(interface.get_measure(sequela, 'prevalence', location))
     responsive_prevalence = sum(responsive_prevalence)
 
     non_responsive_prevalence = []
     for s_id in non_responsive_ids:
         sequela = [s for s in sequelae if s.gbd_id == s_id].pop()
+        if sequela:
+            sequela = sequela.pop()
+        else:
+            continue
         non_responsive_prevalence.append(interface.get_measure(sequela, 'prevalence', location))
     non_responsive_prevalence = sum(non_responsive_prevalence)
 
