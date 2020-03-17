@@ -95,6 +95,7 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         project_globals.IRON_DEFICIENCY_EXPOSURE: load_standard_data,
         project_globals.IRON_DEFICIENCY_RESTRICTIONS: load_metadata,
         project_globals.IRON_DEFICIENCY_EXPOSURE_SD: load_standard_data,
+        project_globals.IRON_DEFICIENCY_TMRED: load_metadata,
         project_globals.IRON_DEFICIENCY_MILD_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
         project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
         project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,

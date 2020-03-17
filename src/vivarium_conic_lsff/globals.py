@@ -83,7 +83,7 @@ VITAMIN_A_DEFICIENCY_RESTRICTIONS = 'risk_factor.vitamin_a_deficiency.restrictio
 VITAMIN_A_DEFICIENCY_DISABILITY_WEIGHT = 'cause.vitamin_a_deficiency.disability_weight'
 
 IRON_DEFICIENCY_EXPOSURE = 'risk_factor.iron_deficiency.exposure'
-IRON_DEFICIENCY_EXPOSURE_SD = 'risk_factor.iron_deficiency.exposure_sd'
+IRON_DEFICIENCY_EXPOSURE_SD = 'risk_factor.iron_deficiency.exposure_standard_deviation'
 IRON_DEFICIENCY_TMRED = 'risk_factor.iron_deficiency.tmred'
 
 IRON_DEFICIENCY_MILD_ANEMIA_IRON_RESPONSIVE_PROPORTION = 'risk_factor.iron_deficiency.mild_anemia_iron_responsive_proportion'
