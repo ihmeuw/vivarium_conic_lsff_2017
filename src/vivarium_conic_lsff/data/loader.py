@@ -261,8 +261,8 @@ def load_no_anemia_iron_responsive_proportion(key: str, location: str):
         responsive_ids.extend(responsive)
         non_responsive_ids.extend(non_responsive)
 
-    responsive_sequelae = [s.gbd_id for s in sequelae if s.gbd_id in responsive_ids]
-    non_responsive_sequelae = [s.gbd_id for s in sequelae if s.gbd_id in non_responsive_ids]
+    responsive_sequelae = [s for s in sequelae if s.gbd_id in responsive_ids]
+    non_responsive_sequelae = [s for s in sequelae if s.gbd_id in non_responsive_ids]
 
     all_prevalence = []
     iron_responsive_prevalence = []
