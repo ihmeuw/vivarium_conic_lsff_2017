@@ -17,6 +17,8 @@ import numpy as np
 
 from gbd_mapping import causes, risk_factors, covariates, sequelae
 from vivarium.framework.artifact import EntityKey
+from vivarium_gbd_access import gbd
+from vivarium_gbd_access.utilities import get_draws
 from vivarium_inputs import interface, utilities, utility_data, globals as vi_globals
 from vivarium_inputs.mapping_extension import alternative_risk_factors
 import vivarium_inputs.validation.sim as validation
@@ -282,7 +284,17 @@ def load_iron_responsive_proportion(key: str, location: str):
 
 
 def load_iron_deficiency_tmred(key: str, location: str):
-    pass
+
+    data = get_draws(gbd_id_type='rei_id',
+                     gbd_id=risk_factors.iron_deficiency.gbd_id,
+                     source='exposure',
+                     location_id=utility_data.get_location_id(location),
+                     sex_id=gbd.MALE + gbd.FEMALE,
+                     age_group_id=gbd.get_age_group_id(),
+                     gbd_round_id=gbd.GBD_ROUND_ID,
+                     status='best')
+    data['rei_id'] = risk_factors.iron_deficiency.gbd_id
+    return data
 
 
 def get_entity(key: str):

@@ -233,7 +233,7 @@ def load_and_write_iron_deficiency_data(artifact: Artifact, location: str):
         project_globals.IRON_DEFICIENCY_RESTRICTIONS,
         project_globals.IRON_DEFICIENCY_EXPOSURE,
         project_globals.IRON_DEFICIENCY_EXPOSURE_SD,
-        project_globals.IRON_DEFICIENCY_TMRED,
+        #project_globals.IRON_DEFICIENCY_TMRED,
         project_globals.IRON_DEFICIENCY_MILD_ANEMIA_DISABILITY_WEIGHT,
         project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_DISABILITY_WEIGHT,
         project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_DISABILITY_WEIGHT,
