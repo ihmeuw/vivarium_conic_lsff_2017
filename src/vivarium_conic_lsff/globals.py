@@ -84,8 +84,8 @@ VITAMIN_A_DEFICIENCY_DISABILITY_WEIGHT = 'cause.vitamin_a_deficiency.disability_
 
 IRON_DEFICIENCY_EXPOSURE = 'risk_factor.iron_deficiency.exposure'
 IRON_DEFICIENCY_EXPOSURE_SD = 'risk_factor.iron_deficiency.exposure_standard_deviation'
-IRON_DEFICIENCY_TMRED = 'risk_factor.iron_deficiency.tmred'
 
+IRON_DEFICIENCY_NO_ANEMIA_IRON_RESPONSIVE_PROPORTION = 'risk_factor.iron_deficiency.no_anemia_iron_responsive_proportion'
 IRON_DEFICIENCY_MILD_ANEMIA_IRON_RESPONSIVE_PROPORTION = 'risk_factor.iron_deficiency.mild_anemia_iron_responsive_proportion'
 IRON_DEFICIENCY_MODERATE_ANEMIA_IRON_RESPONSIVE_PROPORTION = 'risk_factor.iron_deficiency.moderate_anemia_iron_responsive_proportion'
 IRON_DEFICIENCY_SEVERE_ANEMIA_IRON_RESPONSIVE_PROPORTION = 'risk_factor.iron_deficiency.severe_anemia_iron_responsive_proportion'
@@ -432,6 +432,8 @@ VITAMIN_A_BAD_EVENT_TIME = f'{VITAMIN_A_MODEL_NAME}_event_time'
 VITAMIN_A_GOOD_EVENT_COUNT = f'{VITAMIN_A_GOOD}_event_count'
 VITAMIN_A_GOOD_EVENT_TIME = f'{VITAMIN_A_GOOD}_event_time'
 VITAMIN_A_PROPENSITY = f'{VITAMIN_A_MODEL_NAME}_propensity'
+
+IRON_DEFICIENCY_MODEL_NAME = 'iron_deficiency'
 
 
 DISEASE_MODELS = (DIARRHEA_MODEL_NAME, MEASLES_MODEL_NAME, LRI_MODEL_NAME)

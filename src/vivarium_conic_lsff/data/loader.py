@@ -100,6 +100,7 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         project_globals.IRON_DEFICIENCY_MILD_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
         project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
         project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
+        project_globals.IRON_DEFICIENCY_NO_ANEMIA_IRON_RESPONSIVE_PROPORTION: load_no_anemia_iron_responsive_proportion,
         project_globals.IRON_DEFICIENCY_MILD_ANEMIA_IRON_RESPONSIVE_PROPORTION: load_iron_responsive_proportion,
         project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_IRON_RESPONSIVE_PROPORTION: load_iron_responsive_proportion,
         project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_IRON_RESPONSIVE_PROPORTION: load_iron_responsive_proportion,
@@ -254,6 +255,38 @@ def load_iron_deficiency_dw(key: str, location: str):
     }
     data_key = sequela_map[key]
     return load_standard_data(data_key, location)
+
+
+def load_no_anemia_iron_responsive_proportion(key: str, location: str):
+    responsive_ids, non_responsive_ids = [], []
+    for responsive, non_responsive in project_globals.ANEMIA_SEQUELAE_ID_MAP.values():
+        responsive_ids.extend(responsive)
+        non_responsive_ids.extend(non_responsive)
+
+    responsive_sequelae = [s.gbd_id for s in sequelae if s.gbd_id in responsive_ids]
+    non_responsive_sequelae = [s.gbd_id for s in sequelae if s.gbd_id in non_responsive_ids]
+
+    all_prevalence = []
+    iron_responsive_prevalence = []
+    for sequela in responsive_sequelae:
+        prevalence = interface.get_measure(sequela, 'prevalence', location)
+        all_prevalence.append(prevalence)
+        iron_responsive_prevalence.append(prevalence)
+    for sequela in non_responsive_sequelae:
+        prevalence = interface.get_measure(sequela, 'prevalence', location)
+        all_prevalence.append(prevalence)
+    all_prevalence = sum(all_prevalence)
+    iron_responsive_prevalence = sum(iron_responsive_prevalence)
+    non_responsive_prevalence = all_prevalence - iron_responsive_prevalence
+
+    other_anemias_prevalence = interface.get_measure(causes.hemoglobinopathies_and_hemolytic_anemias,
+                                                     'prevalence', location)
+    hiv_prevalence = interface.get_measure(causes.hiv_aids, 'prevalence', location)
+    malaria_prevalence = interface.get_measure(causes.malaria, 'prevalence', location)
+    reverse_causal_prevalence = other_anemias_prevalence + hiv_prevalence + malaria_prevalence
+
+    proportion = 1 - all_prevalence - (reverse_causal_prevalence - non_responsive_prevalence)/(1 - all_prevalence)
+    return proportion
 
 
 def load_iron_responsive_proportion(key: str, location: str):
