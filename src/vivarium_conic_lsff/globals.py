@@ -474,6 +474,15 @@ PRETERM = 37  # weeks
 MAX_GESTATIONAL_TIME = 42  # weeks
 
 
+class __HEMOGLOBIN_DISTRIBUTION(NamedTuple):
+    WEIGHT_GAMMA: float = 0.4
+    WEIGHT_GUMBEL: float = 0.6
+    EXPOSURE_MAX: float = 220.
+
+
+HEMOGLOBIN_DISTRIBUTION = __HEMOGLOBIN_DISTRIBUTION()
+
+
 class __LBWSG_MISSING_CATEGORY(NamedTuple):
     CAT: str = 'cat212'
     NAME: str = 'Birth prevalence - [37, 38) wks, [1000, 1500) g'
