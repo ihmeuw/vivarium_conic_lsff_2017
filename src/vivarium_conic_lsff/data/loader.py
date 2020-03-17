@@ -321,7 +321,7 @@ def load_iron_responsive_proportion(key: str, location: str):
 
     non_responsive_prevalence = []
     for s_id in non_responsive_ids:
-        sequela = [s for s in sequelae if s.gbd_id == s_id].pop()
+        sequela = [s for s in sequelae if s.gbd_id == s_id]
         if sequela:
             sequela = sequela.pop()
         else:
