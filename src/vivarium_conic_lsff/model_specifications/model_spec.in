@@ -12,23 +12,23 @@ components:
             - RiskEffect('risk_factor.vitamin_a_deficiency', 'cause.diarrheal_diseases.incidence_rate')
             - RiskEffect('risk_factor.vitamin_a_deficiency', 'cause.measles.incidence_rate')
             - RiskEffect('risk_factor.vitamin_a_deficiency', 'cause.lower_respiratory_infections.incidence_rate')
-        metrics:
-            - DisabilityObserver()
-
     vivarium_conic_lsff.components:
         - Mortality()
 
-        - DiseaseObserver('diarrheal_diseases')
-        - DiseaseObserver('measles')
-        - DiseaseObserver('lower_respiratory_infections')
-        - LiveBirthWithNTDObserver()
-        - LBWSGObserver()
-        - MortalityObserver()
+        - VitaminADeficiency()
+        - IronDeficiency()
 
         - LBWSGRisk()
         - LBWSGRiskEffect('cause.all_causes.mortality_hazard')
 
-        - VitaminADeficiency()
+        - DiseaseObserver('diarrheal_diseases')
+        - DiseaseObserver('measles')
+        - DiseaseObserver('lower_respiratory_infections')
+        - DiseaseObserver('vitamin_a_deficiency')
+        - LiveBirthWithNTDObserver()
+        - LBWSGObserver()
+        - DisabilityObserver()
+        - MortalityObserver()
 
 
 configuration:
