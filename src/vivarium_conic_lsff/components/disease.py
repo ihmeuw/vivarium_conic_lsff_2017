@@ -184,13 +184,19 @@ class IronDeficiency:
         return [self._distribution]
 
     def setup(self, builder: 'Builder'):
-        columns_created = ['iron_responsive', f'{self.name}_propensity']
+        columns_created = [f'{self.name}_propensity', 'iron_responsiveness_propensity']
         columns_required = ['age', 'sex']
         self.randomness = builder.randomness.get_stream(f'{self.name}.propensity')
         threshold_data = self.load_iron_responsiveness_threshold(builder)
         self.thresholds = builder.lookup.build_table(threshold_data,
-                                                     key_columns=['sex'],
-                                                     parameter_columns=['age', 'year'])
+                                                key_columns=['sex'],
+                                                parameter_columns=['age', 'year'])
+        self.iron_responsive = builder.value.register_value_producer(
+            f'iron_responsive',
+            source=self.get_iron_responsive,
+            requires_columns=['age', 'sex', 'iron_responsiveness_propensity'],
+            requires_values=[f'{self.name}.exposure'])
+
         disability_weight_data = self.load_disability_weight_data(builder)
         self.raw_disability_weight = builder.lookup.build_table(disability_weight_data,
                                                                 key_columns=['sex'],
@@ -209,19 +215,14 @@ class IronDeficiency:
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  creates_columns=columns_created,
                                                  requires_columns=columns_required,
-                                                 requires_values=[f'{self.name}.exposure_parameters'],
                                                  requires_streams=[f'{self.name}.propensity'])
 
     def on_initialize_simulants(self, pop_data: 'SimulantData'):
         propensity = self.randomness.get_draw(pop_data.index)
         iron_responsive_propensity = self.randomness.get_draw(pop_data.index, additional_key='iron_responsiveness')
-        exposure = self._compute_exposure(propensity)
-        severity = self._get_severity(exposure)
-        thresholds = pd.Series(self.thresholds(pop_data.index).lookup(pop_data.index, severity), index=pop_data.index)
-
         pop_update = pd.DataFrame({
             f'{self.name}_propensity': propensity,
-            'iron_responsive': iron_responsive_propensity < thresholds,
+            f'iron_responsiveness_propensity': iron_responsive_propensity
         }, index=pop_data.index)
         self.population_view.update(pop_update)
 
@@ -234,7 +235,20 @@ class IronDeficiency:
         exposure = self.exposure(index)
         severity = self._get_severity(exposure)
         disability_weight = pd.Series(disability_data.lookup(index, severity), index=index)
+
         return disability_weight
+
+    def get_iron_responsive(self, index):
+        propensity = (self.population_view
+                      .subview(['iron_responsiveness_propensity'])
+                      .get(index)
+                      .iron_responsiveness_propensity)
+        exposure = self.exposure(index)
+        severity = self._get_severity(exposure)
+        threshold = pd.Series(self.thresholds(index).lookup(index, severity), index=index)
+        iron_responsive = propensity < threshold
+        iron_responsive.name = 'iron_responsive'
+        return iron_responsive
 
     def _compute_exposure(self, propensity):
         return self._distribution.ppf(propensity)
@@ -258,7 +272,6 @@ class IronDeficiency:
     def load_iron_responsiveness_threshold(self, builder):
         data = []
         keys = {
-            'none': project_globals.IRON_DEFICIENCY_NO_ANEMIA_IRON_RESPONSIVE_PROPORTION,
             'mild': project_globals.IRON_DEFICIENCY_MILD_ANEMIA_IRON_RESPONSIVE_PROPORTION,
             'moderate': project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_IRON_RESPONSIVE_PROPORTION,
             'severe': project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_IRON_RESPONSIVE_PROPORTION
@@ -269,7 +282,9 @@ class IronDeficiency:
                           .set_index([c for c in proportion.columns if c != 'value'])
                           .rename(columns={'value': severity}))
             data.append(proportion)
-        return pd.concat(data, axis=1).reset_index()
+        data = pd.concat(data, axis=1).reset_index()
+        data.loc[:, 'none'] = 1.
+        return data
 
     def load_disability_weight_data(self, builder):
         data = []
@@ -285,7 +300,7 @@ class IronDeficiency:
                                  .rename(columns={'value': severity}))
             data.append(disability_weight)
         data = pd.concat(data, axis=1).reset_index()
-        data.loc[:, 'none'] = 0
+        data.loc[:, 'none'] = 0.
         return data
 
 
