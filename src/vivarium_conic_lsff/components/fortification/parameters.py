@@ -6,6 +6,7 @@ from vivarium_conic_lsff.utilities import (BetaParams, sample_beta_distribution,
 
 
 FOLIC_ACID_DELAY = pd.Timedelta(days=365.25)
+FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN = 'mother_ate_folic_acid_fortified_food'
 
 FOLIC_ACID_COVERAGE = {
     'Ethiopia': [
