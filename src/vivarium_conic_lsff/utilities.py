@@ -1,10 +1,11 @@
 import click
-import pandas as pd
-
-from typing import NamedTuple, Union, List
 from pathlib import Path
-from loguru import logger
+from typing import Union, List
 
+from loguru import logger
+import numpy as np
+import pandas as pd
+import scipy.stats
 from vivarium_public_health.risks.data_transformations import pivot_categorical
 
 from vivarium_conic_lsff import globals as project_globals
@@ -77,3 +78,63 @@ def read_data_by_draw(artifact_path: str, key : str, draw: int) -> pd.DataFrame:
     data = pivot_categorical(data)
     data[project_globals.LBWSG_MISSING_CATEGORY.CAT] = project_globals.LBWSG_MISSING_CATEGORY.EXPOSURE
     return data
+
+
+class BetaParams:
+
+    def __init__(self, upper_bound, lower_bound, alpha, beta):
+        self.upper_bound = upper_bound
+        self.lower_bound = lower_bound
+        self.support_width = self.upper_bound - self.lower_bound
+        self.alpha = alpha
+        self.beta = beta
+
+    @classmethod
+    def from_statistics(cls, mean, upper_bound, lower_bound, variance=None):
+        if variance is None:
+            variance = confidence_interval_variance(upper_bound, lower_bound)
+        support_width = (upper_bound - lower_bound)
+        mean = (mean - lower_bound) / support_width
+        variance /= support_width ** 2
+        alpha = mean * (mean * (1 - mean) / variance - 1)
+        beta = (1 - mean) * (mean * (1 - mean) / variance - 1)
+        return cls(upper_bound, lower_bound, alpha, beta)
+
+
+def sample_beta_distribution(seed: int, params: BetaParams) -> float:
+    """Gets a single random draw from a scaled beta distribution.
+
+    Parameters
+    ----------
+    seed
+        Seed for the random number generator.
+
+    Returns
+    -------
+        The random variate from the scaled beta distribution.
+
+    """
+    np.random.seed(seed)
+    return params.lower_bound + params.support_width*scipy.stats.beta.rvs(params.alpha, params.beta)
+
+
+class LogNormParams:
+
+    def __init__(self, median, upper_bound):
+        # 0.975-quantile of standard normal distribution (=1.96, approximately)
+        q_975 = scipy.stats.norm().ppf(0.975)
+        mu = np.log(median)  # mean of normal distribution for log(variable)
+        sigma = (np.log(upper_bound) - mu) / q_975
+        self.sigma = sigma
+        self.scale = median
+
+
+def sample_lognormal_distribution(seed: int, params: LogNormParams):
+    np.random.seed(seed)
+    return scipy.stats.lognorm.rvs(s=params.sigma, scale=params.scale)
+
+
+def confidence_interval_variance(upper, lower):
+    ninety_five_percent_spread = (upper - lower) / 2
+    std_dev = ninety_five_percent_spread / (2 * 1.96)
+    return std_dev ** 2
