@@ -29,8 +29,8 @@ COLUMN_SORT_ORDER = [
     'risk',
     'cause',
     'treatment_group',
-    'birth_weight',
-    'gestational_age',
+    'vitamin_a_cat',
+    'anemia_group',
     'measure',
     'input_draw'
 ]
@@ -41,11 +41,11 @@ def make_measure_data(data):
         population=get_population_data(data),
         person_time=get_measure_data(data, 'person_time', with_cause=False),
         ylls=get_measure_data(data, 'ylls'),
-        ylds=get_measure_data(data, 'ylds', stratified=False),
+        ylds=get_measure_data(data, 'ylds'),
         deaths=get_measure_data(data, 'deaths'),
 
         state_person_time=get_state_person_time(data),
-        transition_count=get_measure_data(data, 'transition_count', with_cause=False, stratified=False),
+        transition_count=get_measure_data(data, 'transition_count', with_cause=False),
         births=get_births(data),
         births_with_ntd=get_births(data, with_ntds=True),
         birth_weight=get_lbwsg(data, 'birth_weight'),
@@ -154,7 +154,7 @@ def sort_data(data):
     return data.reset_index(drop=True)
 
 
-def split_processing_column(data, with_cause, stratified):
+def split_processing_column(data, with_cause):
 
     data['measure'], year_sex, process = data.process.str.split('_in_').str
     if with_cause:
@@ -162,11 +162,9 @@ def split_processing_column(data, with_cause, stratified):
     data['year'], data['sex'] = year_sex.str.split('_among_').str
 
     process = process.str.split('age_group_').str[1]
-    if stratified:
-        data['age_group'], process = process.str.split('_birthweight_').str
-        data['birth_weight'], data['gestational_age'] = process.str.split('_gestational_age_').str
-    else:
-        data['age_group'] = process
+    data['age_group'], process = process.str.split('_vitamin_a_').str
+    data['vitamin_a_cat'], data['anemia_group'] = process.str.split('_anemia_').str
+
     return data.drop(columns='process')
 
 
@@ -180,14 +178,14 @@ def get_population_data(data):
     return sort_data(total_pop)
 
 
-def get_measure_data(data, measure, with_cause=True, stratified=True):
+def get_measure_data(data, measure, with_cause=True):
     data = pivot_data(data[project_globals.RESULT_COLUMNS(measure) + GROUPBY_COLUMNS])
-    data = split_processing_column(data, with_cause, stratified)
+    data = split_processing_column(data, with_cause)
     return sort_data(data)
 
 
 def get_state_person_time(data):
-    data = get_measure_data(data, 'state_person_time', with_cause=False, stratified=False)
+    data = get_measure_data(data, 'state_person_time', with_cause=False)
     data['cause'] = data['measure'].str.split('_person_time').str[0]
     data['measure'] = 'person_time'
     return sort_data(data)
