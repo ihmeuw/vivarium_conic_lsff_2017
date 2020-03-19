@@ -23,6 +23,7 @@ components:
 
         - FolicAcidFortificationCoverage()
         - FolicAcidFortificationEffect()
+        - FortificationIntervention()
 
         - DiseaseObserver('diarrheal_diseases')
         - DiseaseObserver('measles')
