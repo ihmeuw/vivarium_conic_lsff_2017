@@ -105,3 +105,99 @@ def sample_folic_acid_relative_risk(location: str, draw: int) -> float:
     return sample_lognormal_distribution(seed, RELATIVE_RISK)
 
 
+VITAMIN_A_COVERAGE = {
+    # TODO - numbers for Ethiopia are stubbed
+    'Ethiopia': [
+        {
+            'baseline': BetaParams(
+                upper_bound=1,
+                lower_bound=0,
+                alpha=0.1,
+                beta=9.9,
+            ),
+            'intervention_start': BetaParams(
+                upper_bound=1,
+                lower_bound=0,
+                alpha=0.5,
+                beta=3.1,
+            ),
+            'intervention_end': BetaParams(
+                upper_bound=1,
+                lower_bound=0,
+                alpha=0.8,
+                beta=2.36,
+            ),
+            'weight': 1,
+        },
+    ],
+    'India': [
+        {
+            'baseline': BetaParams.from_statistics(
+                mean=0.243,
+                upper_bound=0.279,
+                lower_bound=0.211,
+            ),
+            'intervention_start': BetaParams.from_statistics(
+                mean=0.894,
+                upper_bound=0.918,
+                lower_bound=0.87,
+            ),
+            'intervention_end': BetaParams.from_statistics(
+                mean=1.0,
+                upper_bound=1.0,
+                lower_bound=1.0,
+            ),
+            'weight': 1
+        },
+    ],
+    'Nigeria': [
+        {  # Kano state
+            'baseline': BetaParams.from_statistics(
+                mean=0.076,
+                upper_bound=0.059,
+                lower_bound=0.094,
+            ),
+            'intervention_start': BetaParams.from_statistics(
+                mean=0.359,
+                upper_bound=0.391,
+                lower_bound=0.327,
+            ),
+            'intervention_end': BetaParams.from_statistics(
+                mean=0.984,
+                upper_bound=0.992,
+                lower_bound=0.976,
+            ),
+            'weight': 4/25,
+        },
+        {  # Lagos state
+            'baseline': BetaParams.from_statistics(
+                mean=0.072,
+                upper_bound=0.089,
+                lower_bound=0.055
+            ),
+            'intervention_start': BetaParams.from_statistics(
+                mean=0.227,
+                upper_bound=0.255,
+                lower_bound=0.199,
+            ),
+            'intervention_end': BetaParams.from_statistics(
+                mean=0.986,
+                upper_bound=0.993,
+                lower_bound=0.978
+            ),
+            'weight': 21/25,
+        }
+    ]
+}
+
+
+def sample_vitamin_a_coverage(location: str, draw: int, coverage_time: str) -> float:
+    seed = get_hash(f'vitamin_a_fortification_coverage_draw_{draw}_location_{location}')
+    return sum([coverage_params['weight'] * sample_beta_distribution(seed, coverage_params[coverage_time])
+                for coverage_params in VITAMIN_A_COVERAGE[location]])
+
+
+def sample_vitamin_a_relative_risk(location: str, draw: int) -> float:
+    seed = get_hash(f'vitamin_a_fortification_relative_risk_draw_{draw}_location_{location}')
+    return sample_lognormal_distribution(seed, RELATIVE_RISK)
+
