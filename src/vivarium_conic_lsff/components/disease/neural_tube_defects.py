@@ -18,7 +18,7 @@ class DiseaseState(DiseaseState_):
             preferred_combiner=list_combiner,
             preferred_post_processor=union_post_processor
         )
-        self._birth_prevalence = self._birth_prevalence
+        self._birth_prevalence = self.birth_prevalence
         self.birth_prevalence = builder.value.register_value_producer(
             f'{self.state_id}.birth_prevalence',
             source=self.get_birth_prevalence,
@@ -27,7 +27,7 @@ class DiseaseState(DiseaseState_):
         )
 
     def get_birth_prevalence(self, index):
-        birth_prevalence = self.birth_prevalence(index)
+        birth_prevalence = self._birth_prevalence(index)
         joint_paf = self.birth_prevalence_joint_paf(index)
         return birth_prevalence * (1 - joint_paf.values)
 

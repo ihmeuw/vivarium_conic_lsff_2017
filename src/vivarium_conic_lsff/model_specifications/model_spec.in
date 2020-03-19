@@ -21,6 +21,9 @@ components:
         - LBWSGRisk()
         - LBWSGRiskEffect('cause.all_causes.mortality_hazard')
 
+        - FolicAcidFortificationCoverage()
+        - FolicAcidFortificationEffect()
+
         - DiseaseObserver('diarrheal_diseases')
         - DiseaseObserver('measles')
         - DiseaseObserver('lower_respiratory_infections')
