@@ -51,6 +51,7 @@ class FortificationIntervention:
         return coverage - delta_coverage
 
     def adjust_effective_coverage_level(self, index, coverage):
+        import pdb; pdb.set_trace()
         time_since_start = max(to_years(self.clock() - (self.intervention_start + FOLIC_ACID_DELAY)), 0)
         c_start, c_end = self.coverage_start(index), self.coverage_end(index)
         delta_coverage = c_end - (c_end - c_start)*(1 - FOLIC_ACID_ANNUAL_PROPORTION_INCREASE)**time_since_start
@@ -60,4 +61,4 @@ class FortificationIntervention:
     def load_coverage_data(builder: 'Builder', coverage_time: str) -> float:
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
-        return sample_folic_acid_coverage(location, draw, 'baseline')
+        return sample_folic_acid_coverage(location, draw, coverage_time)

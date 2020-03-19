@@ -1,1 +1,2 @@
 from .folic_acid import FolicAcidFortificationCoverage, FolicAcidFortificationEffect
+from .intervention import FortificationIntervention
