@@ -29,8 +29,7 @@ class LBWSGRisk:
         # names but that's too much to try to fix now.  We didn't build the
         # distribution class with clear enough boundaries to make the
         # distinction.
-        created_columns = [project_globals.BIRTH_WEIGHT_STATUS_COLUMN,
-                           project_globals.GESTATIONAL_AGE_STATUS_COLUMN]+ project_globals.LBWSG_COLUMNS
+        created_columns = project_globals.LBWSG_COLUMNS
         self.population_view = builder.population.get_view(created_columns + ['tracked'])
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  creates_columns=created_columns,

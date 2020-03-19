@@ -15,9 +15,9 @@ for an example.
 import pandas as pd
 import numpy as np
 
-from gbd_mapping import causes, risk_factors, covariates
+from gbd_mapping import causes, risk_factors, covariates, sequelae
 from vivarium.framework.artifact import EntityKey
-from vivarium_inputs import interface, utilities, utility_data, globals as vi_globals
+from vivarium_inputs import interface, utilities, utility_data, globals as vi_globals, extract
 from vivarium_inputs.mapping_extension import alternative_risk_factors
 import vivarium_inputs.validation.sim as validation
 
@@ -83,6 +83,26 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         project_globals.LBWSG_EXPOSURE: load_lbwsg_exposure,
         project_globals.LBWSG_RELATIVE_RISK: load_lbwsg_relative_risk,
         project_globals.LBWSG_PAF: load_lbwsg_paf,
+
+        project_globals.VITAMIN_A_DEFICIENCY_CATEGORIES: load_metadata,
+        project_globals.VITAMIN_A_DEFICIENCY_RESTRICTIONS: load_metadata,
+        project_globals.VITAMIN_A_DEFICIENCY_DISABILITY_WEIGHT: load_standard_data,
+        project_globals.VITAMIN_A_DEFICIENCY_EXPOSURE: load_standard_data,
+        project_globals.VITAMIN_A_DEFICIENCY_RELATIVE_RISK: load_standard_data,
+        project_globals.VITAMIN_A_DEFICIENCY_PAF: load_standard_data,
+        project_globals.VITAMIN_A_DEFICIENCY_DISTRIBUTION: load_metadata,
+
+        project_globals.IRON_DEFICIENCY_EXPOSURE: load_standard_data,
+        project_globals.IRON_DEFICIENCY_RESTRICTIONS: load_metadata,
+        project_globals.IRON_DEFICIENCY_EXPOSURE_SD: load_standard_data,
+        project_globals.IRON_DEFICIENCY_MILD_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
+        project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
+        project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
+        project_globals.IRON_DEFICIENCY_NO_ANEMIA_IRON_RESPONSIVE_PROPORTION: load_no_anemia_iron_responsive_proportion,
+        project_globals.IRON_DEFICIENCY_MILD_ANEMIA_IRON_RESPONSIVE_PROPORTION: load_iron_responsive_proportion,
+        project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_IRON_RESPONSIVE_PROPORTION: load_iron_responsive_proportion,
+        project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_IRON_RESPONSIVE_PROPORTION: load_iron_responsive_proportion,
+
     }
     return mapping[lookup_key](lookup_key, location)
 
@@ -222,13 +242,108 @@ def load_lbwsg_paf(key: str, location: str):
     return utilities.sort_hierarchical_data(data)
 
 
+def load_iron_deficiency_dw(key: str, location: str):
+    sequela_map = {
+        project_globals.IRON_DEFICIENCY_MILD_ANEMIA_DISABILITY_WEIGHT:
+            'sequela.mild_iron_deficiency_anemia.disability_weight',
+        project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_DISABILITY_WEIGHT:
+            'sequela.moderate_iron_deficiency_anemia.disability_weight',
+        project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_DISABILITY_WEIGHT:
+            'sequela.severe_iron_deficiency_anemia.disability_weight',
+    }
+    data_key = sequela_map[key]
+    return load_standard_data(data_key, location)
+
+
+def load_no_anemia_iron_responsive_proportion(key: str, location: str):
+    responsive_ids, non_responsive_ids = [], []
+    for responsive, non_responsive in project_globals.ANEMIA_SEQUELAE_ID_MAP.values():
+        responsive_ids.extend(responsive)
+        non_responsive_ids.extend(non_responsive)
+
+    responsive_sequelae = [s for s in sequelae if s.gbd_id in responsive_ids]
+    non_responsive_sequelae = [s for s in sequelae if s.gbd_id in non_responsive_ids]
+
+    all_prevalence = []
+    iron_responsive_prevalence = []
+    for sequela in responsive_sequelae:
+        try:
+            prevalence = interface.get_measure(sequela, 'prevalence', location)
+        except (extract.DataDoesNotExistError, extract.DataAbnormalError):
+            continue
+        all_prevalence.append(prevalence)
+        iron_responsive_prevalence.append(prevalence)
+    for sequela in non_responsive_sequelae:
+        try:
+            prevalence = interface.get_measure(sequela, 'prevalence', location)
+        except (extract.DataDoesNotExistError, extract.DataAbnormalError):
+            continue
+        all_prevalence.append(prevalence)
+    all_prevalence = sum(all_prevalence)
+    iron_responsive_prevalence = sum(iron_responsive_prevalence)
+    non_responsive_prevalence = all_prevalence - iron_responsive_prevalence
+
+    other_anemias_prevalence = interface.get_measure(causes.hemoglobinopathies_and_hemolytic_anemias,
+                                                     'prevalence', location)
+    hiv_prevalence = interface.get_measure(causes.hiv_aids, 'prevalence', location)
+    malaria_prevalence = interface.get_measure(causes.malaria, 'prevalence', location)
+    reverse_causal_prevalence = other_anemias_prevalence + hiv_prevalence + malaria_prevalence
+
+    proportion = (1 - all_prevalence
+                  - (reverse_causal_prevalence - non_responsive_prevalence)/(1 - all_prevalence)).fillna(0)
+    return proportion
+
+
+def load_iron_responsive_proportion(key: str, location: str):
+    sequela_map = {
+        project_globals.IRON_DEFICIENCY_MILD_ANEMIA_IRON_RESPONSIVE_PROPORTION:
+            project_globals.ANEMIA_SEQUELAE_ID_MAP['mild'],
+        project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_IRON_RESPONSIVE_PROPORTION:
+            project_globals.ANEMIA_SEQUELAE_ID_MAP['moderate'],
+        project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_IRON_RESPONSIVE_PROPORTION:
+            project_globals.ANEMIA_SEQUELAE_ID_MAP['severe'],
+    }
+    responsive_ids, non_responsive_ids = sequela_map[key]
+
+    responsive_prevalence = []
+    for s_id in responsive_ids:
+        sequela = [s for s in sequelae if s.gbd_id == s_id]
+        if sequela:
+            sequela = sequela.pop()
+        else:
+            continue
+        try:
+            prevalence = interface.get_measure(sequela, 'prevalence', location)
+        except (extract.DataDoesNotExistError, extract.DataAbnormalError):
+            continue
+        responsive_prevalence.append(prevalence)
+    responsive_prevalence = sum(responsive_prevalence)
+
+    non_responsive_prevalence = []
+    for s_id in non_responsive_ids:
+        sequela = [s for s in sequelae if s.gbd_id == s_id]
+        if sequela:
+            sequela = sequela.pop()
+        else:
+            continue
+        try:
+            prevalence = interface.get_measure(sequela, 'prevalence', location)
+        except (extract.DataDoesNotExistError, extract.DataAbnormalError):
+            continue
+        non_responsive_prevalence.append(prevalence)
+    non_responsive_prevalence = sum(non_responsive_prevalence)
+
+    return (responsive_prevalence / (responsive_prevalence + non_responsive_prevalence)).fillna(0)
+
+
 def get_entity(key: str):
     # Map of entity types to their gbd mappings.
     type_map = {
         'cause': causes,
         'covariate': covariates,
         'risk_factor': risk_factors,
-        'alternative_risk_factor': alternative_risk_factors
+        'alternative_risk_factor': alternative_risk_factors,
+        'sequela': sequelae
     }
     key = EntityKey(key)
     return type_map[key.type][key.name]

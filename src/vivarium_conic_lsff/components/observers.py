@@ -3,14 +3,72 @@ from itertools import product
 from typing import Dict
 
 import pandas as pd
-import numpy as np
-from vivarium_public_health.metrics import (MortalityObserver as MortalityObserver_)
+from vivarium.framework.values import list_combiner
+from vivarium_public_health.metrics.disability import _disability_post_processor, get_years_lived_with_disability
+from vivarium_public_health.metrics import (MortalityObserver as MortalityObserver_,
+                                            DisabilityObserver as DisabilityObserver_)
 from vivarium_public_health.metrics.utilities import (get_output_template, get_group_counts,
                                                       QueryString, to_years, get_person_time,
                                                       get_deaths, get_years_of_life_lost,
                                                       get_age_bins, get_time_iterable)
 
 from vivarium_conic_lsff import globals as project_globals
+
+
+class DisabilityObserver(DisabilityObserver_):
+
+    def setup(self, builder):
+        self.config = builder.configuration.metrics.disability
+        self.age_bins = get_age_bins(builder)
+        self.clock = builder.time.clock()
+        self.step_size = builder.time.step_size()
+        self.causes = project_globals.CAUSES_OF_DISABILITY
+        self.years_lived_with_disability = Counter()
+        self.disability_weight_pipelines = {cause: builder.value.get_value(f'{cause}.disability_weight')
+                                            for cause in self.causes}
+
+        self.disability_weight = builder.value.register_value_producer(
+            'disability_weight',
+            source=lambda index: [pd.Series(0.0, index=index)],
+            preferred_combiner=list_combiner,
+            preferred_post_processor=_disability_post_processor)
+
+        columns_required = ['tracked', 'alive', 'years_lived_with_disability']
+        if self.config.by_age:
+            columns_required += ['age']
+        if self.config.by_sex:
+            columns_required += ['sex']
+        self.population_view = builder.population.get_view(columns_required)
+        builder.population.initializes_simulants(self.initialize_disability,
+                                                 creates_columns=['years_lived_with_disability'])
+
+        self.vitamin_a_exposure = builder.value.get_value(f'{project_globals.VITAMIN_A_MODEL_NAME}.exposure')
+        self.anemia_severity = builder.value.get_value('anemia_severity')
+        # FIXME: The state table is modified before the clock advances.
+        # In order to get an accurate representation of person time we need to look at
+        # the state table before anything happens.
+        builder.event.register_listener('time_step__prepare', self.on_time_step_prepare)
+        builder.value.register_value_modifier('metrics', modifier=self.metrics)
+
+    def on_time_step_prepare(self, event):
+        pop = self.population_view.get(event.index, query='tracked == True and alive == "alive"')
+        vitamin_a_exposure = self.vitamin_a_exposure(pop.index)
+        anemia_severity = self.anemia_severity(pop.index)
+
+        groups = product(project_globals.VITAMIN_A_RISK_CATEGORIES, project_globals.ANEMIA_SEVERITY_GROUPS)
+        for vitamin_a_cat, anemia_group in groups:
+            pop_in_group = pop.loc[(vitamin_a_exposure == vitamin_a_cat) & (anemia_severity == anemia_group)]
+
+            ylds_this_step = get_years_lived_with_disability(pop_in_group, self.config.to_dict(),
+                                                             self.clock().year, self.step_size(),
+                                                             self.age_bins, self.disability_weight_pipelines, self.causes)
+
+            ylds_this_step = {f'{k}_vitamin_a_{vitamin_a_cat}_anemia_{anemia_group}': v
+                            for k, v in ylds_this_step.items()}
+            self.years_lived_with_disability.update(ylds_this_step)
+
+        pop.loc[:, 'years_lived_with_disability'] += self.disability_weight(pop.index)
+        self.population_view.update(pop)
 
 
 class MortalityObserver(MortalityObserver_):
@@ -24,35 +82,32 @@ class MortalityObserver(MortalityObserver_):
         self.age_bins = get_age_bins(builder)
         # Overwrites attribute set in parent class
         self.population_view = builder.population.get_view(columns_required)
-        self.exposure = builder.value.get_value(f'{project_globals.LBWSG_MODEL_NAME}.exposure')
+
+        self.vitamin_a_exposure = builder.value.get_value(f'{project_globals.VITAMIN_A_MODEL_NAME}.exposure')
+        self.anemia_severity = builder.value.get_value('anemia_severity')
 
     def metrics(self, index, metrics):
         pop = self.population_view.get(index)
         pop.loc[pop.exit_time.isnull(), 'exit_time'] = self.clock()
-
-        exposure = self.exposure(index, skip_post_processor=True)
-        pop[project_globals.BIRTH_WEIGHT_STATUS_COLUMN] = np.where(
-            exposure[project_globals.BIRTH_WEIGHT] < project_globals.UNDERWEIGHT,
-            project_globals.BIRTH_WEIGHT_UNDERWEIGHT, project_globals.BIRTH_WEIGHT_NORMAL)
-        pop[project_globals.GESTATIONAL_AGE_STATUS_COLUMN] = np.where(
-            exposure[project_globals.GESTATION_TIME] < project_globals.PRETERM,
-            project_globals.GESTATIONAL_AGE_PRETERM, project_globals.GESTATIONAL_AGE_NORMAL)
+        vitamin_a_exposure = self.vitamin_a_exposure(pop.index)
+        anemia_severity = self.anemia_severity(pop.index)
 
         measure_getters = (
+            # FIXME: get person time needs to happen every time step.
             (get_person_time, ()),
             (get_deaths, (project_globals.CAUSES_OF_DEATH,)),
             (get_years_of_life_lost, (self.life_expectancy, project_globals.CAUSES_OF_DEATH)),
         )
 
-        categories = product(project_globals.BIRTH_WEIGHT_CATEGORIES, project_globals.GESTATIONAL_AGE_CATEGORIES)
-        for bw_cat, ga_cat in categories:
-            pop_in_group = pop.loc[(pop[project_globals.BIRTH_WEIGHT_STATUS_COLUMN] == bw_cat)
-                                   & (pop[project_globals.GESTATIONAL_AGE_STATUS_COLUMN] == ga_cat)]
+        groups = product(project_globals.VITAMIN_A_RISK_CATEGORIES, project_globals.ANEMIA_SEVERITY_GROUPS)
+        for vitamin_a_cat, anemia_group in groups:
+            pop_in_group = pop.loc[(vitamin_a_exposure == vitamin_a_cat) & (anemia_severity == anemia_group)]
+
             base_args = (pop_in_group, self.config.to_dict(), self.start_time, self.clock(), self.age_bins)
 
             for measure_getter, extra_args in measure_getters:
                 measure_data = measure_getter(*base_args, *extra_args)
-                measure_data = {f'{k}_birthweight_{bw_cat}_gestational_age_{ga_cat}': v
+                measure_data = {f'{k}_vitamin_a_{vitamin_a_cat}_anemia_{anemia_group}': v
                                 for k, v in measure_data.items()}
                 metrics.update(measure_data)
 
@@ -131,6 +186,9 @@ class DiseaseObserver:
             columns_required += ['sex']
         self.population_view = builder.population.get_view(columns_required)
 
+        self.vitamin_a_exposure = builder.value.get_value('vitamin_a_deficiency.exposure')
+        self.anemia_severity = builder.value.get_value('anemia_severity')
+
         builder.value.register_value_modifier('metrics', self.metrics)
         # FIXME: The state table is modified before the clock advances.
         # In order to get an accurate representation of person time we need to look at
@@ -143,12 +201,21 @@ class DiseaseObserver:
 
     def on_time_step_prepare(self, event):
         pop = self.population_view.get(event.index)
+        vitamin_a_exposure = self.vitamin_a_exposure(pop.index)
+        anemia_severity = self.anemia_severity(pop.index)
+
         # Ignoring the edge case where the step spans a new year.
         # Accrue all counts and time to the current year.
-        for state in self.states:
-            state_person_time_this_step = get_state_person_time(pop, self.config, self.disease, state,
-                                                                self.clock().year, event.step_size, self.age_bins)
-            self.person_time.update(state_person_time_this_step)
+        groups = product(project_globals.VITAMIN_A_RISK_CATEGORIES, project_globals.ANEMIA_SEVERITY_GROUPS)
+        for vitamin_a_cat, anemia_group in groups:
+            pop_in_group = pop.loc[(vitamin_a_exposure == vitamin_a_cat) & (anemia_severity == anemia_group)]
+
+            for state in self.states:
+                state_person_time_this_step = get_state_person_time(pop_in_group, self.config, self.disease, state,
+                                                                    self.clock().year, event.step_size, self.age_bins)
+                state_person_time_this_step = {f'{k}_vitamin_a_{vitamin_a_cat}_anemia_{anemia_group}': v
+                                               for k, v in state_person_time_this_step.items()}
+                self.person_time.update(state_person_time_this_step)
 
         # This enables tracking of transitions between states
         prior_state_pop = self.population_view.get(event.index)
@@ -157,10 +224,19 @@ class DiseaseObserver:
 
     def on_collect_metrics(self, event):
         pop = self.population_view.get(event.index)
-        for transition in self.transitions:
-            transition_counts_this_step = get_transition_count(pop, self.config, self.disease, transition,
-                                                               event.time, self.age_bins)
-            self.counts.update(transition_counts_this_step)
+        vitamin_a_exposure = self.vitamin_a_exposure(pop.index)
+        anemia_severity = self.anemia_severity(pop.index)
+
+        groups = product(project_globals.VITAMIN_A_RISK_CATEGORIES, project_globals.ANEMIA_SEVERITY_GROUPS)
+        for vitamin_a_cat, anemia_group in groups:
+            pop_in_group = pop.loc[(vitamin_a_exposure == vitamin_a_cat) & (anemia_severity == anemia_group)]
+
+            for transition in self.transitions:
+                transition_counts_this_step = get_transition_count(pop_in_group, self.config, self.disease, transition,
+                                                                   event.time, self.age_bins)
+                transition_counts_this_step = {f'{k}_vitamin_a_{vitamin_a_cat}_anemia_{anemia_group}': v
+                                               for k, v in transition_counts_this_step.items()}
+                self.counts.update(transition_counts_this_step)
 
     def metrics(self, index, metrics):
         metrics.update(self.counts)
@@ -183,15 +259,14 @@ def get_state_person_time(pop, config, disease, state, current_year, step_size, 
 
 def get_transition_count(pop, config, disease, transition, event_time, age_bins):
     from_state, to_state = transition.split('_TO_')
-    event_this_step = ((pop[f'{to_state}_event_time'] == event_time)
-                       & (pop[f'previous_{disease}'] == from_state))
+    event_this_step = ((pop[f'previous_{disease}'] == from_state)
+                       & (pop[disease] == to_state))
     transitioned_pop = pop.loc[event_this_step]
     base_key = get_output_template(**config).substitute(measure=f'{transition}_event_count',
                                                         year=event_time.year)
     base_filter = QueryString('')
     transition_count = get_group_counts(transitioned_pop, base_filter, base_key, config, age_bins)
     return transition_count
-
 
 
 class LiveBirthWithNTDObserver:
@@ -227,13 +302,11 @@ class LiveBirthWithNTDObserver:
         self.population_view = builder.population.get_view(columns_required)
         builder.value.register_value_modifier('metrics', self.metrics)
 
-
     def metrics(self, index, metrics):
         pop = self.population_view.get(index)
         births = get_births(pop, self.config, self._sim_start, self._sim_end)
         metrics.update(births)
         return metrics
-
 
     def __repr__(self):
         return f"DiseaseObserver({self.disease})"
@@ -281,7 +354,6 @@ def get_births(pop: pd.DataFrame, config: Dict[str, bool], sim_start: pd.Timesta
         group_ntd_births = get_group_counts(born_in_span, filter, cat_year_key, config, empty_age_bins)
         births.update(group_ntd_births)
     return births
-
 
 
 class LBWSGObserver:

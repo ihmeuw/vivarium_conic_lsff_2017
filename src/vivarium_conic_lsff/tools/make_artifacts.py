@@ -173,6 +173,10 @@ def build_single_location_artifact(path: Union[str, Path], location: str, log_to
     builder.load_and_write_neural_tube_data(artifact, location)
     logger.info(f'Loading and writing LBWSG data.')
     builder.load_and_write_lbwsg_data(artifact, location)
+    logger.info(f'Loading and writing vitamin a deficiency data.')
+    builder.load_and_write_vitamin_a_deficiency_data(artifact, location)
+    logger.info(f'Loading and writing iron deficiency data.')
+    builder.load_and_write_iron_deficiency_data(artifact, location)
 
     logger.info('**DONE**')
 

@@ -8,21 +8,27 @@ components:
             - SIR_fixed_duration('measles', '10')
             - SIS('lower_respiratory_infections')
             - NeonatalSWC_without_incidence('neural_tube_defects')
-        metrics:
-            - DisabilityObserver()
-
+        risks:
+            - RiskEffect('risk_factor.vitamin_a_deficiency', 'cause.diarrheal_diseases.incidence_rate')
+            - RiskEffect('risk_factor.vitamin_a_deficiency', 'cause.measles.incidence_rate')
+            - RiskEffect('risk_factor.vitamin_a_deficiency', 'cause.lower_respiratory_infections.incidence_rate')
     vivarium_conic_lsff.components:
         - Mortality()
+
+        - VitaminADeficiency()
+        - IronDeficiency()
+
+        - LBWSGRisk()
+        - LBWSGRiskEffect('cause.all_causes.mortality_hazard')
 
         - DiseaseObserver('diarrheal_diseases')
         - DiseaseObserver('measles')
         - DiseaseObserver('lower_respiratory_infections')
+        - DiseaseObserver('vitamin_a_deficiency')
         - LiveBirthWithNTDObserver()
         - LBWSGObserver()
+        - DisabilityObserver()
         - MortalityObserver()
-
-        - LBWSGRisk()
-        - LBWSGRiskEffect('cause.all_causes.mortality_hazard')
 
 
 configuration:
