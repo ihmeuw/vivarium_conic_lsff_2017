@@ -10,7 +10,7 @@ from vivarium_conic_lsff import globals as project_globals
 SCENARIO_COLUMN = 'scenario'
 GROUPBY_COLUMNS = [
     project_globals.INPUT_DRAW_COLUMN,
-    # SCENARIO_COLUMN
+    SCENARIO_COLUMN
 ]
 PERSON_YEAR_SCALE = 100_000
 DROP_COLUMNS = ['measure']
@@ -31,6 +31,7 @@ COLUMN_SORT_ORDER = [
     'treatment_group',
     'birth_weight',
     'gestational_age',
+    'fortification_group',
     'measure',
     'input_draw'
 ]
@@ -41,11 +42,11 @@ def make_measure_data(data):
         population=get_population_data(data),
         person_time=get_measure_data(data, 'person_time', with_cause=False),
         ylls=get_measure_data(data, 'ylls'),
-        ylds=get_measure_data(data, 'ylds', stratified=False),
+        ylds=get_measure_data(data, 'ylds'),
         deaths=get_measure_data(data, 'deaths'),
 
         state_person_time=get_state_person_time(data),
-        transition_count=get_measure_data(data, 'transition_count', with_cause=False, stratified=False),
+        transition_count=get_measure_data(data, 'transition_count', with_cause=False),
         births=get_births(data),
         births_with_ntd=get_births(data, with_ntds=True),
         birth_weight=get_lbwsg(data, 'birth_weight'),
@@ -100,9 +101,7 @@ def read_data(path: Path) -> (pd.DataFrame, List[str]):
     data = (data
             .drop(columns=data.columns.intersection(project_globals.THROWAWAY_COLUMNS))
             .reset_index(drop=True)
-            # TODO: add back when we have scenarios
-            # .rename(columns={project_globals.OUTPUT_SCENARIO_COLUMN: SCENARIO_COLUMN}))
-            )
+            .rename(columns={project_globals.OUTPUT_SCENARIO_COLUMN: SCENARIO_COLUMN}))
     data[project_globals.INPUT_DRAW_COLUMN] = data[project_globals.INPUT_DRAW_COLUMN].astype(int)
     data[project_globals.RANDOM_SEED_COLUMN] = data[project_globals.RANDOM_SEED_COLUMN].astype(int)
     with (path.parent / 'keyspace.yaml').open() as f:
@@ -154,19 +153,14 @@ def sort_data(data):
     return data.reset_index(drop=True)
 
 
-def split_processing_column(data, with_cause, stratified):
-
+def split_processing_column(data, with_cause):
     data['measure'], year_sex, process = data.process.str.split('_in_').str
     if with_cause:
         data['measure'], data['cause'] = data['measure'].str.split('_due_to_').str
     data['year'], data['sex'] = year_sex.str.split('_among_').str
 
     process = process.str.split('age_group_').str[1]
-    if stratified:
-        data['age_group'], process = process.str.split('_birthweight_').str
-        data['birth_weight'], data['gestational_age'] = process.str.split('_gestational_age_').str
-    else:
-        data['age_group'] = process
+    data['age_group'], data['fortification_group'] = process.str.split('_folic_acid_fortification_group_').str
     return data.drop(columns='process')
 
 
@@ -175,19 +169,17 @@ def get_population_data(data):
                                 + project_globals.RESULT_COLUMNS('population')
                                 + GROUPBY_COLUMNS])
     total_pop = total_pop.rename(columns={'process': 'measure'})
-    # TODO: Add back in once we have treatment
-    # total_pop['treatment_group'] = 'all'
     return sort_data(total_pop)
 
 
-def get_measure_data(data, measure, with_cause=True, stratified=True):
+def get_measure_data(data, measure, with_cause=True):
     data = pivot_data(data[project_globals.RESULT_COLUMNS(measure) + GROUPBY_COLUMNS])
-    data = split_processing_column(data, with_cause, stratified)
+    data = split_processing_column(data, with_cause)
     return sort_data(data)
 
 
 def get_state_person_time(data):
-    data = get_measure_data(data, 'state_person_time', with_cause=False, stratified=False)
+    data = get_measure_data(data, 'state_person_time', with_cause=False)
     data['cause'] = data['measure'].str.split('_person_time').str[0]
     data['measure'] = 'person_time'
     return sort_data(data)
@@ -197,7 +189,8 @@ def get_births(data, with_ntds=False):
     key = 'born_with_ntds' if with_ntds else 'births'
     data = pivot_data(data[project_globals.RESULT_COLUMNS(key) + GROUPBY_COLUMNS])
     data['measure'] = 'live_births_with_ntds' if with_ntds else 'live_births'
-    data['year'], data['sex'] = data.process.str.split('_in_').str[1].str.split('_among_').str
+    data['year'], process = data.process.str.split('_in_').str[1].str.split('_among_').str
+    data['sex'], data['fortification_group'] = process.str.split('_folic_acid_fortification_group_').str
     return sort_data(data.drop(columns='process'))
 
 

@@ -1,6 +1,7 @@
 import itertools
-
 from typing import NamedTuple
+
+import pandas as pd
 
 ####################
 # Project metadata #
@@ -511,6 +512,15 @@ GESTATIONAL_AGE_PRETERM = 'preterm'
 GESTATIONAL_AGE_CATEGORIES = (GESTATIONAL_AGE_NORMAL, GESTATIONAL_AGE_PRETERM)
 
 
+###########################
+# Intervention parameters #
+###########################
+
+FOLIC_ACID_DELAY = pd.Timedelta(days=365.25)
+FOLIC_ACID_ANNUAL_PROPORTION_INCREASE = 0.1
+FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN = 'mother_ate_folic_acid_fortified_food'
+FOLIC_ACID_FORTIFICATION_GROUPS = ['unknown', 'true', 'false']
+
 #################################
 # Results columns and variables #
 #################################
@@ -528,19 +538,20 @@ STANDARD_COLUMNS = {
 # Columns from parallel runs
 INPUT_DRAW_COLUMN = 'input_draw'
 RANDOM_SEED_COLUMN = 'random_seed'
+OUTPUT_SCENARIO_COLUMN = 'fortification_intervention.scenario'
 
 THROWAWAY_COLUMNS = ([f'{state}_event_count' for state in STATES]
                      + [f'{state}_prevalent_cases_at_sim_end' for state in STATES])
 
 TOTAL_POPULATION_COLUMN_TEMPLATE = 'total_population_{POP_STATE}'
-PERSON_TIME_COLUMN_TEMPLATE = 'person_time_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_vitamin_a_{VITAMIN_A_CAT}_anemia_{ANEMIA_GROUP}'
-DEATH_COLUMN_TEMPLATE = 'death_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_vitamin_a_{VITAMIN_A_CAT}_anemia_{ANEMIA_GROUP}'
-YLLS_COLUMN_TEMPLATE = 'ylls_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_vitamin_a_{VITAMIN_A_CAT}_anemia_{ANEMIA_GROUP}'
-YLDS_COLUMN_TEMPLATE = 'ylds_due_to_{CAUSE_OF_DISABILITY}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_vitamin_a_{VITAMIN_A_CAT}_anemia_{ANEMIA_GROUP}'
-STATE_PERSON_TIME_COLUMN_TEMPLATE = '{STATE}_person_time_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_vitamin_a_{VITAMIN_A_CAT}_anemia_{ANEMIA_GROUP}'
-TRANSITION_COUNT_COLUMN_TEMPLATE = '{TRANSITION}_event_count_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_vitamin_a_{VITAMIN_A_CAT}_anemia_{ANEMIA_GROUP}'
-BIRTHS_COLUMN_TEMPLATE = 'live_births_in_{YEAR}_among_{SEX}'
-BORN_WITH_NTD_COLUMN_TEMPLATE = 'born_with_ntds_in_{YEAR}_among_{SEX}'
+PERSON_TIME_COLUMN_TEMPLATE = 'person_time_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_folic_acid_fortification_group_{FORTIFICATION_GROUP}'
+DEATH_COLUMN_TEMPLATE = 'death_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_folic_acid_fortification_group_{FORTIFICATION_GROUP}'
+YLLS_COLUMN_TEMPLATE = 'ylls_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_folic_acid_fortification_group_{FORTIFICATION_GROUP}'
+YLDS_COLUMN_TEMPLATE = 'ylds_due_to_{CAUSE_OF_DISABILITY}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_folic_acid_fortification_group_{FORTIFICATION_GROUP}'
+STATE_PERSON_TIME_COLUMN_TEMPLATE = '{STATE}_person_time_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_folic_acid_fortification_group_{FORTIFICATION_GROUP}'
+TRANSITION_COUNT_COLUMN_TEMPLATE = '{TRANSITION}_event_count_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_folic_acid_fortification_group_{FORTIFICATION_GROUP}'
+BIRTHS_COLUMN_TEMPLATE = 'live_births_in_{YEAR}_among_{SEX}_folic_acid_fortification_group_{FORTIFICATION_GROUP}'
+BORN_WITH_NTD_COLUMN_TEMPLATE = 'born_with_ntds_in_{YEAR}_among_{SEX}_folic_acid_fortification_group_{FORTIFICATION_GROUP}'
 BIRTH_WEIGHT_COLUMN_TEMPLATE = 'birth_weight_{STAT_STATE}'
 GESTATIONAL_AGE_COLUMN_TEMPLATE = 'gestational_age_{STAT_STATE}'
 
@@ -595,8 +606,7 @@ TEMPLATE_FIELD_MAP = {
     'STATE': STATES,
     'TRANSITION': TRANSITIONS,
     'STAT_STATE': STAT_MEASURES,
-    'VITAMIN_A_CAT': VITAMIN_A_RISK_CATEGORIES,
-    'ANEMIA_GROUP': ANEMIA_SEVERITY_GROUPS,
+    'FORTIFICATION_GROUP': FOLIC_ACID_FORTIFICATION_GROUPS,
 
 }
 

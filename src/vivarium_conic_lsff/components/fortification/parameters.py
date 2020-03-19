@@ -1,14 +1,8 @@
-import pandas as pd
 from vivarium.framework.randomness import get_hash
 
 from vivarium_conic_lsff.utilities import (BetaParams, sample_beta_distribution,
                                            LogNormParams, sample_lognormal_distribution)
 
-
-FOLIC_ACID_DELAY = pd.Timedelta(days=365.25)
-FOLIC_ACID_ANNUAL_PROPORTION_INCREASE = 0.1
-FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN = 'mother_ate_folic_acid_fortified_food'
-FOLIC_ACID_FORTIFICATION_GROUPS = ['unknown', 'true', 'false']
 
 FOLIC_ACID_COVERAGE = {
     'Ethiopia': [

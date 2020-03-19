@@ -3,9 +3,8 @@ import typing
 import pandas as pd
 from vivarium_public_health.utilities import to_years
 
-from vivarium_conic_lsff.components.fortification.parameters import (sample_folic_acid_coverage,
-                                                                     FOLIC_ACID_DELAY,
-                                                                     FOLIC_ACID_ANNUAL_PROPORTION_INCREASE)
+from vivarium_conic_lsff.components.fortification.parameters import sample_folic_acid_coverage
+from vivarium_conic_lsff import globals as project_globals
 
 if typing.TYPE_CHECKING:
     from vivarium.framework.engine import Builder
@@ -49,14 +48,20 @@ class FortificationIntervention:
     def adjust_coverage_level(self, index, coverage):
         time_since_start = max(to_years(self.clock() - self.intervention_start), 0)
         c_start, c_end = self.coverage_start(index), self.coverage_end(index)
-        delta_coverage = c_end - (c_end - c_start)*(1 - FOLIC_ACID_ANNUAL_PROPORTION_INCREASE)**time_since_start
-        return coverage - delta_coverage
+        new_coverage = (c_end
+                        - (c_end - c_start)
+                        * (1 - project_globals.FOLIC_ACID_ANNUAL_PROPORTION_INCREASE)**time_since_start)
+        return new_coverage
 
     def adjust_effective_coverage_level(self, index, coverage):
-        time_since_start = max(to_years(self.clock() - (self.intervention_start + FOLIC_ACID_DELAY)), 0)
+        time_since_start = max(
+            to_years(self.clock() - (self.intervention_start + project_globals.FOLIC_ACID_DELAY)), 0
+        )
         c_start, c_end = self.coverage_start(index), self.coverage_end(index)
-        delta_coverage = c_end - (c_end - c_start)*(1 - FOLIC_ACID_ANNUAL_PROPORTION_INCREASE)**time_since_start
-        return coverage - delta_coverage
+        new_coverage = (c_end
+                        - (c_end - c_start)
+                        * (1 - project_globals.FOLIC_ACID_ANNUAL_PROPORTION_INCREASE) ** time_since_start)
+        return new_coverage
 
     @staticmethod
     def load_coverage_data(builder: 'Builder', coverage_time: str) -> float:

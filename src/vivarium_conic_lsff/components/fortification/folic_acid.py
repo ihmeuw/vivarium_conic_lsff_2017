@@ -3,8 +3,8 @@ import typing
 import pandas as pd
 
 from vivarium_conic_lsff.components.fortification.parameters import (sample_folic_acid_coverage,
-                                                                     sample_folic_acid_relative_risk,
-                                                                     FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN)
+                                                                     sample_folic_acid_relative_risk)
+from vivarium_conic_lsff import globals as project_globals
 
 if typing.TYPE_CHECKING:
     from vivarium.framework.engine import Builder
@@ -28,22 +28,23 @@ class FolicAcidFortificationCoverage:
             source=coverage
         )
 
-        self.randomness = builder.randomness.get_stream(FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN)
-        self.population_view = builder.population.get_view([FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN])
+        self._column = project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN
+        self.randomness = builder.randomness.get_stream(self._column)
+        self.population_view = builder.population.get_view([self._column])
         builder.population.initializes_simulants(self.on_initialize_simulants,
-                                                 creates_columns=[FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN],
+                                                 creates_columns=[self._column],
                                                  requires_values=['folic_acid_fortification.effective_coverage_level'],
-                                                 requires_streams=[FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN])
+                                                 requires_streams=[self._column])
 
     def on_initialize_simulants(self, pop_data: 'SimulantData'):
         if pop_data.user_data['sim_state'] == 'setup':  # Initial population
-            pop_update = pd.Series('unknown', index=pop_data.index, name=FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN)
+            pop_update = pd.Series('unknown', index=pop_data.index, name=self._column)
         else:  # New sims
             draw = self.randomness.get_draw(pop_data.index)
             effective_coverage = self.effective_coverage_level(pop_data.index)
             pop_update = pd.Series((draw < effective_coverage).map({True: 'true', False: 'false'}),
                                    index=pop_data.index,
-                                   name=FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN)
+                                   name=self._column)
         self.population_view.update(pop_update)
 
     @staticmethod
@@ -69,10 +70,11 @@ class FolicAcidFortificationEffect:
         builder.value.register_value_modifier('neural_tube_defects.birth_prevalence',
                                               self.adjust_birth_prevalence)
 
-        self.population_view = builder.population.get_view([FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN])
+        self._column = project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN
+        self.population_view = builder.population.get_view([self._column])
 
     def adjust_birth_prevalence(self, index, birth_prevalence):
-        covered = self.population_view.get(index)[FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN]
+        covered = self.population_view.get(index)[self._column]
         not_covered = covered[covered == 'false'].index
         birth_prevalence.loc[not_covered] *= self.relative_risk(not_covered)
         return birth_prevalence
