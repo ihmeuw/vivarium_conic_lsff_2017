@@ -39,10 +39,12 @@ class FortificationIntervention:
         self.coverage_start = builder.lookup.build_table(coverage_start)
         coverage_end = self.load_coverage_data(builder, 'intervention_end')
         self.coverage_end = builder.lookup.build_table(coverage_end)
-        builder.value.register_value_modifier('folic_acid_fortification.coverage_level',
-                                              self.adjust_coverage_level)
-        builder.value.register_value_modifier('folic_acid_fortification.effective_coverage_level',
-                                              self.adjust_effective_coverage_level)
+        scenario = builder.configuration.fortification_intervention.scenario
+        if scenario == 'folic_acid_fortification_scale_up':
+            builder.value.register_value_modifier('folic_acid_fortification.coverage_level',
+                                                  self.adjust_coverage_level)
+            builder.value.register_value_modifier('folic_acid_fortification.effective_coverage_level',
+                                                  self.adjust_effective_coverage_level)
 
     def adjust_coverage_level(self, index, coverage):
         time_since_start = max(to_years(self.clock() - self.intervention_start), 0)
@@ -59,6 +61,7 @@ class FortificationIntervention:
 
     @staticmethod
     def load_coverage_data(builder: 'Builder', coverage_time: str) -> float:
+        scenario = builder.configuration.fortification_intervention.scenario
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
         return sample_folic_acid_coverage(location, draw, coverage_time)
