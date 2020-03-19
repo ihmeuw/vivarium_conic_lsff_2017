@@ -22,19 +22,18 @@ DROP_COLUMNS = ['measure']
 # ]
 
 
-class Stratification:
-    def __init__(self, age=True, sex=True, year=True):
-        self._levels = []
-        if age:
-            self._levels.append(('age_group', 'in_age_group_'))
-        if sex:
-            self._levels.append(('sex', '_among_'))
-        if year:
-            self._levels.append(('year', '_in_'))
-
-    @property
-    def levels(self):
-        return list(self._levels)
+COLUMN_SORT_ORDER = [
+    'year',
+    'age_group',
+    'sex',
+    'risk',
+    'cause',
+    'treatment_group',
+    'birth_weight',
+    'gestational_age',
+    'measure',
+    'input_draw'
+]
 
 
 def make_measure_data(data):
@@ -42,18 +41,15 @@ def make_measure_data(data):
         population=get_population_data(data),
         person_time=get_measure_data(data, 'person_time', with_cause=False),
         ylls=get_measure_data(data, 'ylls'),
-        ylds=get_measure_data(data, 'ylds'),
+        ylds=get_measure_data(data, 'ylds', stratified=False),
         deaths=get_measure_data(data, 'deaths'),
-        state_person_time=get_measure_data(data, 'state_person_time', with_cause=False, state=True),
-        transition_count=get_measure_data(data, 'transition_count', with_cause=False, transition=True),
-        births=get_measure_data(data, 'births', with_cause=False, state=False,
-                                           stratified=Stratification(age=False, sex=True, year=True)),
-        births_with_ntd=get_measure_data(data, 'born_with_ntd', with_cause=False, state=False,
-                                           stratified=Stratification(age=False, sex=True, year=True)),
-        birth_weight=get_measure_data(data, 'birth_weight', with_cause=False, state=False,
-                                stratified=Stratification(age=False, sex=False, year=False)),
-        gestational_age=get_measure_data(data, 'gestational_age', with_cause=False, state=False,
-                                stratified=Stratification(age=False, sex=False, year=False)),
+
+        state_person_time=get_state_person_time(data),
+        transition_count=get_measure_data(data, 'transition_count', with_cause=False, stratified=False),
+        births=get_births(data),
+        births_with_ntd=get_births(data, with_ntds=True),
+        birth_weight=get_lbwsg(data, 'birth_weight'),
+        gestational_age=get_lbwsg(data, 'gestational_age'),
     )
     return measure_data
 
@@ -114,20 +110,19 @@ def read_data(path: Path) -> (pd.DataFrame, List[str]):
     return data, keyspace
 
 
-def filter_out_incomplete(data, keyspace):
-    output = []
-    for draw in keyspace[project_globals.INPUT_DRAW_COLUMN]:
-        # For each draw, gather all random seeds completed for all scenarios.
-        random_seeds = set(keyspace[project_globals.RANDOM_SEED_COLUMN])
-        draw_data = data.loc[data[project_globals.INPUT_DRAW_COLUMN] == draw]
-        # TODO: add back when we have scenarios
-        # for scenario in keyspace[project_globals.OUTPUT_SCENARIO_COLUMN]:
-        #     seeds_in_data = draw_data.loc[data[SCENARIO_COLUMN] == scenario,
-        #                                   project_globals.RANDOM_SEED_COLUMN].unique()
-        #     random_seeds = random_seeds.intersection(seeds_in_data)
-        draw_data = draw_data.loc[draw_data[project_globals.RANDOM_SEED_COLUMN].isin(random_seeds)]
-        output.append(draw_data)
-    return pd.concat(output, ignore_index=True).reset_index(drop=True)
+# def filter_out_incomplete(data, keyspace):
+#     output = []
+#     random_seeds = set(keyspace[project_globals.RANDOM_SEED_COLUMN])
+#     for draw in keyspace[project_globals.INPUT_DRAW_COLUMN]:
+#         # For each draw, gather all random seeds completed for all scenarios.
+#         draw_data = data.loc[data[project_globals.INPUT_DRAW_COLUMN] == draw]
+#         for scenario in keyspace[project_globals.OUTPUT_SCENARIO_COLUMN]:
+#             seeds_in_data = draw_data.loc[data[SCENARIO_COLUMN] == scenario,
+#                                           project_globals.RANDOM_SEED_COLUMN].unique()
+#             random_seeds = random_seeds.intersection(seeds_in_data)
+#         draw_data = draw_data.loc[draw_data[project_globals.RANDOM_SEED_COLUMN].isin(random_seeds)]
+#         output.append(draw_data)
+#     return pd.concat(output, ignore_index=True).reset_index(drop=True)
 
 
 def aggregate_over_seed(data):
@@ -153,33 +148,25 @@ def pivot_data(data):
 
 
 def sort_data(data):
-    sort_order = [
-        'age_group',
-        'risk',
-        'cause',
-        'treatment_group',
-        'measure',
-        'input_draw'
-    ]
-    sort_order = [c for c in sort_order if c in data.columns]
+    sort_order = [c for c in COLUMN_SORT_ORDER if c in data.columns]
     other_cols = [c for c in data.columns if c not in sort_order]
     data = data[sort_order + other_cols].sort_values(sort_order)
     return data.reset_index(drop=True)
 
 
-def split_processing_column(data, with_cause, state, transition, stratified):
-    data['treatment_group'] = 'all'
-    for level in stratified.levels:
-        data['process'], data[level[0]] = data.process.str.split(level[1]).str
+def split_processing_column(data, with_cause, stratified):
+
+    data['measure'], year_sex, process = data.process.str.split('_in_').str
     if with_cause:
-        data['measure'], data['cause'] = data.process.str.split('_due_to_').str
-    elif state:
-        data['state'], _ = data.process.str.split('_person_time').str
-        data['measure'] = 'person_time'
-    elif transition:
-        data['measure'], _ = data.process.str.split('_event_count').str
+        data['measure'], data['cause'] = data['measure'].str.split('_due_to_').str
+    data['year'], data['sex'] = year_sex.str.split('_among_').str
+
+    process = process.str.split('age_group_').str[1]
+    if stratified:
+        data['age_group'], process = process.str.split('_birthweight_').str
+        data['birth_weight'], data['gestational_age'] = process.str.split('_gestational_age_').str
     else:
-        data['measure'] = data['process']
+        data['age_group'] = process
     return data.drop(columns='process')
 
 
@@ -188,14 +175,37 @@ def get_population_data(data):
                                 + project_globals.RESULT_COLUMNS('population')
                                 + GROUPBY_COLUMNS])
     total_pop = total_pop.rename(columns={'process': 'measure'})
-    total_pop['treatment_group'] = 'all'
+    # TODO: Add back in once we have treatment
+    # total_pop['treatment_group'] = 'all'
     return sort_data(total_pop)
 
 
-def get_measure_data(data, measure, with_cause=True, state=False, transition=False, stratified=Stratification()):
+def get_measure_data(data, measure, with_cause=True, stratified=True):
     data = pivot_data(data[project_globals.RESULT_COLUMNS(measure) + GROUPBY_COLUMNS])
-    data = split_processing_column(data, with_cause, state, transition, stratified)
+    data = split_processing_column(data, with_cause, stratified)
     return sort_data(data)
+
+
+def get_state_person_time(data):
+    data = get_measure_data(data, 'state_person_time', with_cause=False, stratified=False)
+    data['cause'] = data['measure'].str.split('_person_time').str[0]
+    data['measure'] = 'person_time'
+    return sort_data(data)
+
+
+def get_births(data, with_ntds=False):
+    key = 'born_with_ntds' if with_ntds else 'births'
+    data = pivot_data(data[project_globals.RESULT_COLUMNS(key) + GROUPBY_COLUMNS])
+    data['measure'] = 'live_births_with_ntds' if with_ntds else 'live_births'
+    data['year'], data['sex'] = data.process.str.split('_in_').str[1].str.split('_among_').str
+    return sort_data(data.drop(columns='process'))
+
+
+def get_lbwsg(data, measure):
+    data = pivot_data(data[project_globals.RESULT_COLUMNS(measure) + GROUPBY_COLUMNS])
+    return sort_data(data.rename(columns={'process': 'measure'}))
+
+
 
 
 # def get_risk_categories(data):

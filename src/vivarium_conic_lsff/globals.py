@@ -553,7 +553,7 @@ COLUMN_TEMPLATES = {
     'state_person_time': STATE_PERSON_TIME_COLUMN_TEMPLATE,
     'transition_count': TRANSITION_COUNT_COLUMN_TEMPLATE,
     'births': BIRTHS_COLUMN_TEMPLATE,
-    'born_with_ntd': BORN_WITH_NTD_COLUMN_TEMPLATE,
+    'born_with_ntds': BORN_WITH_NTD_COLUMN_TEMPLATE,
     'birth_weight': BIRTH_WEIGHT_COLUMN_TEMPLATE,
     'gestational_age': GESTATIONAL_AGE_COLUMN_TEMPLATE,
 }
