@@ -4,13 +4,11 @@ import pandas as pd
 
 from vivarium_conic_lsff.components.fortification.parameters import (sample_folic_acid_coverage,
                                                                      sample_folic_acid_relative_risk,
-                                                                     FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN,
-                                                                     FOLIC_ACID_DELAY)
+                                                                     FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN)
 
 if typing.TYPE_CHECKING:
     from vivarium.framework.engine import Builder
     from vivarium.framework.population import SimulantData
-    from vivarium.framework.event import Event
 
 
 class FolicAcidFortificationCoverage:
