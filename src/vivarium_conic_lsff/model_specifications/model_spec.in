@@ -62,7 +62,12 @@ configuration:
         age_start: 0
         age_end: 5
         exit_age: 5
-
+    fortification_intervention:
+        scenario: 'baseline'
+        intervention_start:
+            year: 2021
+            month: 7
+            day: 2
     metrics:
         disability:
             by_age: True

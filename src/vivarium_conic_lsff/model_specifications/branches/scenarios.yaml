@@ -2,4 +2,5 @@ input_draw_count: 10
 random_seed_count: 5
 
 branches:
-    
+  fortification_intervention:
+    scenario: ['baseline', 'folic_acid_fortification_scale_up']

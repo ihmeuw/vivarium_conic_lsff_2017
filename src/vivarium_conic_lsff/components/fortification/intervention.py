@@ -61,7 +61,6 @@ class FortificationIntervention:
 
     @staticmethod
     def load_coverage_data(builder: 'Builder', coverage_time: str) -> float:
-        scenario = builder.configuration.fortification_intervention.scenario
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
         return sample_folic_acid_coverage(location, draw, coverage_time)
