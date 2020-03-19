@@ -13,6 +13,8 @@ from vivarium_public_health.metrics.utilities import (get_output_template, get_g
                                                       get_age_bins, get_time_iterable)
 
 from vivarium_conic_lsff import globals as project_globals
+from vivarium_conic_lsff.components.fortification.parameters import (FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN,
+                                                                     FOLIC_ACID_FORTIFICATION_GROUPS)
 
 
 class DisabilityObserver(DisabilityObserver_):
@@ -33,7 +35,8 @@ class DisabilityObserver(DisabilityObserver_):
             preferred_combiner=list_combiner,
             preferred_post_processor=_disability_post_processor)
 
-        columns_required = ['tracked', 'alive', 'years_lived_with_disability']
+        columns_required = ['tracked', 'alive', 'years_lived_with_disability',
+                            FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN]
         if self.config.by_age:
             columns_required += ['age']
         if self.config.by_sex:
@@ -42,8 +45,6 @@ class DisabilityObserver(DisabilityObserver_):
         builder.population.initializes_simulants(self.initialize_disability,
                                                  creates_columns=['years_lived_with_disability'])
 
-        self.vitamin_a_exposure = builder.value.get_value(f'{project_globals.VITAMIN_A_MODEL_NAME}.exposure')
-        self.anemia_severity = builder.value.get_value('anemia_severity')
         # FIXME: The state table is modified before the clock advances.
         # In order to get an accurate representation of person time we need to look at
         # the state table before anything happens.
@@ -52,19 +53,16 @@ class DisabilityObserver(DisabilityObserver_):
 
     def on_time_step_prepare(self, event):
         pop = self.population_view.get(event.index, query='tracked == True and alive == "alive"')
-        vitamin_a_exposure = self.vitamin_a_exposure(pop.index)
-        anemia_severity = self.anemia_severity(pop.index)
 
-        groups = product(project_globals.VITAMIN_A_RISK_CATEGORIES, project_globals.ANEMIA_SEVERITY_GROUPS)
-        for vitamin_a_cat, anemia_group in groups:
-            pop_in_group = pop.loc[(vitamin_a_exposure == vitamin_a_cat) & (anemia_severity == anemia_group)]
+        for fortification_group in FOLIC_ACID_FORTIFICATION_GROUPS:
+            pop_in_group = pop.loc[pop[FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN] == fortification_group]
 
             ylds_this_step = get_years_lived_with_disability(pop_in_group, self.config.to_dict(),
                                                              self.clock().year, self.step_size(),
                                                              self.age_bins, self.disability_weight_pipelines, self.causes)
 
-            ylds_this_step = {f'{k}_vitamin_a_{vitamin_a_cat}_anemia_{anemia_group}': v
-                            for k, v in ylds_this_step.items()}
+            ylds_this_step = {f'{k}_folic_acid_fortification_group_{fortification_group}': v
+                              for k, v in ylds_this_step.items()}
             self.years_lived_with_disability.update(ylds_this_step)
 
         pop.loc[:, 'years_lived_with_disability'] += self.disability_weight(pop.index)
@@ -76,21 +74,16 @@ class MortalityObserver(MortalityObserver_):
     def setup(self, builder):
         super().setup(builder)
         columns_required = ['tracked', 'alive', 'entrance_time', 'exit_time', 'cause_of_death',
-                            'years_of_life_lost', 'age']
+                            'years_of_life_lost', 'age', FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN]
         if self.config.by_sex:
             columns_required += ['sex']
         self.age_bins = get_age_bins(builder)
         # Overwrites attribute set in parent class
         self.population_view = builder.population.get_view(columns_required)
 
-        self.vitamin_a_exposure = builder.value.get_value(f'{project_globals.VITAMIN_A_MODEL_NAME}.exposure')
-        self.anemia_severity = builder.value.get_value('anemia_severity')
-
     def metrics(self, index, metrics):
         pop = self.population_view.get(index)
         pop.loc[pop.exit_time.isnull(), 'exit_time'] = self.clock()
-        vitamin_a_exposure = self.vitamin_a_exposure(pop.index)
-        anemia_severity = self.anemia_severity(pop.index)
 
         measure_getters = (
             # FIXME: get person time needs to happen every time step.
@@ -99,15 +92,14 @@ class MortalityObserver(MortalityObserver_):
             (get_years_of_life_lost, (self.life_expectancy, project_globals.CAUSES_OF_DEATH)),
         )
 
-        groups = product(project_globals.VITAMIN_A_RISK_CATEGORIES, project_globals.ANEMIA_SEVERITY_GROUPS)
-        for vitamin_a_cat, anemia_group in groups:
-            pop_in_group = pop.loc[(vitamin_a_exposure == vitamin_a_cat) & (anemia_severity == anemia_group)]
+        for fortification_group in FOLIC_ACID_FORTIFICATION_GROUPS:
+            pop_in_group = pop.loc[pop[FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN] == fortification_group]
 
             base_args = (pop_in_group, self.config.to_dict(), self.start_time, self.clock(), self.age_bins)
 
             for measure_getter, extra_args in measure_getters:
                 measure_data = measure_getter(*base_args, *extra_args)
-                measure_data = {f'{k}_vitamin_a_{vitamin_a_cat}_anemia_{anemia_group}': v
+                measure_data = {f'{k}_folic_acid_fortification_group_{fortification_group}': v
                                 for k, v in measure_data.items()}
                 metrics.update(measure_data)
 
@@ -177,7 +169,8 @@ class DiseaseObserver:
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  creates_columns=[self.previous_state_column])
 
-        columns_required = ['alive', f'{self.disease}', self.previous_state_column]
+        columns_required = ['alive', f'{self.disease}', self.previous_state_column,
+                            FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN]
         for state in self.states:
             columns_required.append(f'{state}_event_time')
         if self.config['by_age']:
@@ -185,9 +178,6 @@ class DiseaseObserver:
         if self.config['by_sex']:
             columns_required += ['sex']
         self.population_view = builder.population.get_view(columns_required)
-
-        self.vitamin_a_exposure = builder.value.get_value('vitamin_a_deficiency.exposure')
-        self.anemia_severity = builder.value.get_value('anemia_severity')
 
         builder.value.register_value_modifier('metrics', self.metrics)
         # FIXME: The state table is modified before the clock advances.
@@ -201,19 +191,16 @@ class DiseaseObserver:
 
     def on_time_step_prepare(self, event):
         pop = self.population_view.get(event.index)
-        vitamin_a_exposure = self.vitamin_a_exposure(pop.index)
-        anemia_severity = self.anemia_severity(pop.index)
 
         # Ignoring the edge case where the step spans a new year.
         # Accrue all counts and time to the current year.
-        groups = product(project_globals.VITAMIN_A_RISK_CATEGORIES, project_globals.ANEMIA_SEVERITY_GROUPS)
-        for vitamin_a_cat, anemia_group in groups:
-            pop_in_group = pop.loc[(vitamin_a_exposure == vitamin_a_cat) & (anemia_severity == anemia_group)]
+        for fortification_group in FOLIC_ACID_FORTIFICATION_GROUPS:
+            pop_in_group = pop.loc[pop[FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN] == fortification_group]
 
             for state in self.states:
                 state_person_time_this_step = get_state_person_time(pop_in_group, self.config, self.disease, state,
                                                                     self.clock().year, event.step_size, self.age_bins)
-                state_person_time_this_step = {f'{k}_vitamin_a_{vitamin_a_cat}_anemia_{anemia_group}': v
+                state_person_time_this_step = {f'{k}_folic_acid_fortification_group_{fortification_group}': v
                                                for k, v in state_person_time_this_step.items()}
                 self.person_time.update(state_person_time_this_step)
 
@@ -224,17 +211,14 @@ class DiseaseObserver:
 
     def on_collect_metrics(self, event):
         pop = self.population_view.get(event.index)
-        vitamin_a_exposure = self.vitamin_a_exposure(pop.index)
-        anemia_severity = self.anemia_severity(pop.index)
 
-        groups = product(project_globals.VITAMIN_A_RISK_CATEGORIES, project_globals.ANEMIA_SEVERITY_GROUPS)
-        for vitamin_a_cat, anemia_group in groups:
-            pop_in_group = pop.loc[(vitamin_a_exposure == vitamin_a_cat) & (anemia_severity == anemia_group)]
+        for fortification_group in FOLIC_ACID_FORTIFICATION_GROUPS:
+            pop_in_group = pop.loc[pop[FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN] == fortification_group]
 
             for transition in self.transitions:
                 transition_counts_this_step = get_transition_count(pop_in_group, self.config, self.disease, transition,
                                                                    event.time, self.age_bins)
-                transition_counts_this_step = {f'{k}_vitamin_a_{vitamin_a_cat}_anemia_{anemia_group}': v
+                transition_counts_this_step = {f'{k}_folic_acid_fortification_group_{fortification_group}': v
                                                for k, v in transition_counts_this_step.items()}
                 self.counts.update(transition_counts_this_step)
 
@@ -291,11 +275,11 @@ class LiveBirthWithNTDObserver:
         self.config = builder.configuration['metrics'][project_globals.NTD_OBSERVER].to_dict()
         self.config['by_age'] = False
 
-        tmp = builder.configuration['time']['start']
         self._sim_start = pd.Timestamp(**builder.configuration.time.start.to_dict())
         self._sim_end = pd.Timestamp(**builder.configuration.time.end.to_dict())
 
-        columns_required = ['alive', 'dead', f'{self.disease}', 'entrance_time', 'tracked']
+        columns_required = ['alive', f'{self.disease}', 'entrance_time', 'tracked',
+                            FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN]
         if self.config['by_sex']:
             columns_required.append('sex')
 
@@ -304,8 +288,14 @@ class LiveBirthWithNTDObserver:
 
     def metrics(self, index, metrics):
         pop = self.population_view.get(index)
-        births = get_births(pop, self.config, self._sim_start, self._sim_end)
-        metrics.update(births)
+
+        for fortification_group in FOLIC_ACID_FORTIFICATION_GROUPS:
+            pop_in_group = pop.loc[pop[FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN] == fortification_group]
+
+            births = get_births(pop_in_group, self.config, self._sim_start, self._sim_end)
+            births = {f'{k}_folic_acid_fortification_group_{fortification_group}': v
+                      for k, v in births.items()}
+            metrics.update(births)
         return metrics
 
     def __repr__(self):
