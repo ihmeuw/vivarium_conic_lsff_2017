@@ -7,7 +7,6 @@ components:
             - SIS('diarrheal_diseases')
             - SIR_fixed_duration('measles', '10')
             - SIS('lower_respiratory_infections')
-            - NeonatalSWC_without_incidence('neural_tube_defects')
         risks:
             - RiskEffect('risk_factor.vitamin_a_deficiency', 'cause.diarrheal_diseases.incidence_rate')
             - RiskEffect('risk_factor.vitamin_a_deficiency', 'cause.measles.incidence_rate')
@@ -17,9 +16,13 @@ components:
 
         - VitaminADeficiency()
         - IronDeficiency()
+        - NeonatalSWC_without_incidence('neural_tube_defects')
 
         - LBWSGRisk()
         - LBWSGRiskEffect('cause.all_causes.mortality_hazard')
+
+        - FolicAcidFortificationCoverage()
+        - FolicAcidFortificationEffect()
 
         - DiseaseObserver('diarrheal_diseases')
         - DiseaseObserver('measles')
