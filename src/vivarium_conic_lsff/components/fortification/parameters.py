@@ -192,7 +192,6 @@ VITAMIN_A_COVERAGE = {
 }
 
 
-# TODO - this will change
 VITAMIN_A_FORTIFICATION_RELATIVE_RISK = LogNormParams(
     median=2.22,
     upper_bound=5.26
