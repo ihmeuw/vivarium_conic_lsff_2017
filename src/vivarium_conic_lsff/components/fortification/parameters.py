@@ -88,7 +88,7 @@ FOLIC_ACID_COVERAGE = {
     ]
 }
 
-RELATIVE_RISK = LogNormParams(
+FOLIC_ACID_FORTIFICATION_RELATIVE_RISK = LogNormParams(
     median=1.71,
     upper_bound=2.04
 )
@@ -102,7 +102,7 @@ def sample_folic_acid_coverage(location: str, draw: int, coverage_time: str) -> 
 
 def sample_folic_acid_relative_risk(location: str, draw: int) -> float:
     seed = get_hash(f'folic_acid_fortification_relative_risk_draw_{draw}_location_{location}')
-    return sample_lognormal_distribution(seed, RELATIVE_RISK)
+    return sample_lognormal_distribution(seed, FOLIC_ACID_FORTIFICATION_RELATIVE_RISK)
 
 
 VITAMIN_A_COVERAGE = {
@@ -140,7 +140,7 @@ VITAMIN_A_COVERAGE = {
             'intervention_start': BetaParams.from_statistics(
                 mean=0.894,
                 upper_bound=0.918,
-                lower_bound=0.87,
+                lower_bound=0.870,
             ),
             'intervention_end': BetaParams.from_statistics(
                 mean=1.0,
@@ -191,6 +191,13 @@ VITAMIN_A_COVERAGE = {
 }
 
 
+# TODO - this will change
+VITAMIN_A_FORTIFICATION_RELATIVE_RISK = LogNormParams(
+    median=1.71,
+    upper_bound=2.04
+)
+
+
 def sample_vitamin_a_coverage(location: str, draw: int, coverage_time: str) -> float:
     seed = get_hash(f'vitamin_a_fortification_coverage_draw_{draw}_location_{location}')
     return sum([coverage_params['weight'] * sample_beta_distribution(seed, coverage_params[coverage_time])
@@ -199,5 +206,5 @@ def sample_vitamin_a_coverage(location: str, draw: int, coverage_time: str) -> f
 
 def sample_vitamin_a_relative_risk(location: str, draw: int) -> float:
     seed = get_hash(f'vitamin_a_fortification_relative_risk_draw_{draw}_location_{location}')
-    return sample_lognormal_distribution(seed, RELATIVE_RISK)
+    return sample_lognormal_distribution(seed, VITAMIN_A_FORTIFICATION_RELATIVE_RISK)
 
