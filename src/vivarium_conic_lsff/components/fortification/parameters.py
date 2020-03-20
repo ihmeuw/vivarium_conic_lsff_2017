@@ -88,7 +88,7 @@ FOLIC_ACID_COVERAGE = {
     ]
 }
 
-FOLIC_ACID_FORTIFICATION_RELATIVE_RISK = LogNormParams(
+FOLIC_ACID_FORTIFICATION_RELATIVE_RISK = LogNormParams.from_statistics(
     median=1.71,
     upper_bound=2.04
 )
@@ -192,7 +192,7 @@ VITAMIN_A_COVERAGE = {
 }
 
 
-VITAMIN_A_FORTIFICATION_RELATIVE_RISK = LogNormParams(
+VITAMIN_A_FORTIFICATION_RELATIVE_RISK = LogNormParams.from_statistics(
     median=2.22,
     upper_bound=5.26
 )

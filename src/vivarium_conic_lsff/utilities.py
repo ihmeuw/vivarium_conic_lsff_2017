@@ -124,16 +124,24 @@ def sample_beta_distribution(seed: int, params: BetaParams) -> float:
 
 class LogNormParams:
 
-    def __init__(self, median, upper_bound):
+    def __init__(self, sigma, scale):
+        self.sigma = sigma
+        self.scale = scale
+
+    @classmethod
+    def from_statistics(cls, median, upper_bound):
         # 0.975-quantile of standard normal distribution (=1.96, approximately)
         q_975 = scipy.stats.norm().ppf(0.975)
         mu = np.log(median)  # mean of normal distribution for log(variable)
         sigma = (np.log(upper_bound) - mu) / q_975
-        self.sigma = sigma
-        self.scale = median
+        return cls(sigma, median)
 
 
 def sample_lognormal_distribution(seed: int, params: LogNormParams):
+    # Handle degenerate distribution
+    if params.sigma == 0:
+        return params.scale
+
     np.random.seed(seed)
     return scipy.stats.lognorm.rvs(s=params.sigma, scale=params.scale)
 
