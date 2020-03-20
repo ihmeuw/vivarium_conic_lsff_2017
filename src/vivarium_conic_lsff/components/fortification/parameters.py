@@ -142,10 +142,11 @@ VITAMIN_A_COVERAGE = {
                 upper_bound=0.918,
                 lower_bound=0.870,
             ),
-            'intervention_end': BetaParams.from_statistics(
-                mean=1.0,
+            'intervention_end': BetaParams(
                 upper_bound=1.0,
                 lower_bound=1.0,
+                alpha=1.0,
+                beta=1.0
             ),
             'weight': 1
         },
@@ -193,8 +194,8 @@ VITAMIN_A_COVERAGE = {
 
 # TODO - this will change
 VITAMIN_A_FORTIFICATION_RELATIVE_RISK = LogNormParams(
-    median=1.71,
-    upper_bound=2.04
+    median=2.22,
+    upper_bound=5.26
 )
 
 

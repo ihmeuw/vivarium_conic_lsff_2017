@@ -114,6 +114,10 @@ def sample_beta_distribution(seed: int, params: BetaParams) -> float:
         The random variate from the scaled beta distribution.
 
     """
+    # Handle degenerate distribution
+    if params.upper_bound == params.lower_bound:
+        return params.upper_bound
+
     np.random.seed(seed)
     return params.lower_bound + params.support_width*scipy.stats.beta.rvs(params.alpha, params.beta)
 
