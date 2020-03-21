@@ -521,6 +521,9 @@ FOLIC_ACID_ANNUAL_PROPORTION_INCREASE = 0.1
 FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN = 'mother_ate_folic_acid_fortified_food'
 FOLIC_ACID_FORTIFICATION_GROUPS = ['unknown', 'true', 'false']
 
+VITAMIN_A_FORTIFICATION_PROPENSITY_COLUMN = 'vitamin_a_fortification_propensity'
+VITAMIN_A_COVERAGE_START_COLUMN = 'vitamin_a_coverage_start'
+
 #################################
 # Results columns and variables #
 #################################

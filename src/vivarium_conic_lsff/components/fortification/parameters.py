@@ -197,6 +197,11 @@ VITAMIN_A_FORTIFICATION_RELATIVE_RISK = LogNormParams.from_statistics(
     upper_bound=5.26
 )
 
+VITAMIN_A_FORTIFICATION_TIME_TO_EFFECT = LogNormParams.from_statistics(
+    median=5/12,
+    upper_bound=1
+)
+
 
 def sample_vitamin_a_coverage(location: str, draw: int, coverage_time: str) -> float:
     seed = get_hash(f'vitamin_a_fortification_coverage_draw_{draw}_location_{location}')
@@ -207,4 +212,9 @@ def sample_vitamin_a_coverage(location: str, draw: int, coverage_time: str) -> f
 def sample_vitamin_a_relative_risk(location: str, draw: int) -> float:
     seed = get_hash(f'vitamin_a_fortification_relative_risk_draw_{draw}_location_{location}')
     return sample_lognormal_distribution(seed, VITAMIN_A_FORTIFICATION_RELATIVE_RISK)
+
+
+def sample_vitamin_a_time_to_effect(location: str, draw: int) -> float:
+    seed = get_hash(f'vitamin_a_fortification_time_to_effect_draw_{draw}_location_{location}')
+    return sample_lognormal_distribution(seed, VITAMIN_A_FORTIFICATION_TIME_TO_EFFECT)
 

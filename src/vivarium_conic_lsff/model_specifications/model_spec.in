@@ -25,6 +25,8 @@ components:
         - FolicAcidFortificationEffect()
         - FortificationIntervention()
 
+        - VitaminAFortificationCoverage()
+
         - DiseaseObserver('diarrheal_diseases')
         - DiseaseObserver('measles')
         - DiseaseObserver('lower_respiratory_infections')
