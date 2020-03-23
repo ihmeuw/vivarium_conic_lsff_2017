@@ -124,6 +124,7 @@ VITAMIN_A_COVERAGE = {
                 upper_bound=0.650,
                 lower_bound=0.450,
             ),
+            'weight': 1,
         },
     ],
     'India': [

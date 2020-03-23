@@ -68,6 +68,7 @@ class VitaminAFortificationCoverage:
         coverage_start_time = pop[project_globals.VITAMIN_A_COVERAGE_START_COLUMN]
         time_to_effect = self.time_to_effect(index)
         effectively_covered = (curr_time - coverage_start_time) > time_to_effect
+        effectively_covered = effectively_covered.map({True: 'cat2', False: 'cat1'})
         effectively_covered.name = 'value'
         return effectively_covered
 
@@ -86,3 +87,64 @@ class VitaminAFortificationCoverage:
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
         return sample_vitamin_a_time_to_effect(location, draw)
+
+
+class VitaminAFortificationEffect:
+
+    @property
+    def name(self) -> str:
+        return 'vitamin_a_fortification_effect'
+
+    def setup(self, builder: 'Builder'):
+        relative_risk_data = self.load_relative_risk_data(builder)
+        self.relative_risk = builder.lookup.build_table(relative_risk_data,
+                                                        parameter_columns=['age'])
+        paf_data = self.load_population_attributable_fraction_data(builder)
+        self.population_attributable_fraction = builder.lookup.build_table(paf_data,
+                                                                           parameter_columns=['age'])
+
+        self.effectively_covered = builder.value.get_value('vitamin_a_fortification.effectively_covered')
+        builder.value.register_value_modifier('vitamin_a_deficiency.exposure_parameters.paf',
+                                              self.population_attributable_fraction,
+                                              requires_columns=['age'])
+        builder.value.register_value_modifier('vitamin_a_deficiency.exposure_parameters',
+                                              self.adjust_vitamin_a_exposure_probability,
+                                              requires_columns=['age'])
+
+    def adjust_vitamin_a_exposure_probability(self, index: pd.Index, exposure_probability: pd.Series) -> pd.Series:
+        import pdb; pdb.set_trace()
+        effectively_covered = self.effectively_covered(index)
+        rr = self.relative_risk(index).lookup(index, effectively_covered)
+        return exposure_probability * rr
+
+    @staticmethod
+    def load_relative_risk_data(builder):
+        location = builder.configuration.input_data.location
+        draw = builder.configuration.input_data.input_draw_number
+        rr = sample_vitamin_a_relative_risk(location, draw)
+        relative_risk = pd.DataFrame({
+            'age_start': [0., 0.5],
+            'age_end': [0.5, 10.],
+            # cat2 is covered
+            'cat2': [1, 1],
+            'cat1': [1, rr],
+        })
+        return relative_risk
+
+    @staticmethod
+    def load_population_attributable_fraction_data(builder: 'Builder'):
+        location = builder.configuration.input_data.location
+        draw = builder.configuration.input_data.input_draw_number
+        rr = sample_vitamin_a_relative_risk(location, draw)
+        relative_risk = pd.DataFrame({
+            'age_start': [0., 0.5],
+            'age_end': [0.5, 10.],
+            # key is whether a person is covered by fortification
+            'cat2': [1, 1],
+            'cat1': [1, rr],
+        }).set_index(['age_start', 'age_end'])
+        coverage = sample_vitamin_a_coverage(location, draw, 'baseline')
+        exposure = 1 - coverage
+        mean_rr = relative_risk.loc[:, 'cat1']*exposure + relative_risk.loc[:, 'cat2']*(1-exposure)
+        paf = (mean_rr - 1)/mean_rr
+        return paf.reset_index()
