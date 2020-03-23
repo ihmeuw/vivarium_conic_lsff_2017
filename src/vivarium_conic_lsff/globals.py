@@ -516,6 +516,14 @@ GESTATIONAL_AGE_CATEGORIES = (GESTATIONAL_AGE_NORMAL, GESTATIONAL_AGE_PRETERM)
 # Intervention parameters #
 ###########################
 
+class __SCENARIOS(NamedTuple):
+    BASELINE: str = 'baseline'
+    FOLIC_ACID: str = 'folic_acid_fortification_scale_up'
+    VITAMIN_A: str = 'vitamin_a_fortification_scale_up'
+
+
+SCENARIOS = __SCENARIOS()
+
 FOLIC_ACID_DELAY = pd.Timedelta(days=365.25)
 FOLIC_ACID_ANNUAL_PROPORTION_INCREASE = 0.1
 FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN = 'mother_ate_folic_acid_fortified_food'
@@ -523,6 +531,7 @@ FOLIC_ACID_FORTIFICATION_GROUPS = ['unknown', 'true', 'false']
 
 VITAMIN_A_FORTIFICATION_PROPENSITY_COLUMN = 'vitamin_a_fortification_propensity'
 VITAMIN_A_COVERAGE_START_COLUMN = 'vitamin_a_coverage_start'
+VITAMIN_A_ANNUAL_PROPORTION_INCREASE = 0.1
 
 #################################
 # Results columns and variables #
