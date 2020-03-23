@@ -112,7 +112,6 @@ class VitaminAFortificationEffect:
                                               requires_columns=['age'])
 
     def adjust_vitamin_a_exposure_probability(self, index: pd.Index, exposure_probability: pd.Series) -> pd.Series:
-        import pdb; pdb.set_trace()
         effectively_covered = self.effectively_covered(index)
         rr = self.relative_risk(index).lookup(index, effectively_covered)
         return exposure_probability * rr
