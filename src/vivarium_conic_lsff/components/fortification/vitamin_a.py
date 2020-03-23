@@ -26,7 +26,7 @@ class VitaminAFortificationCoverage:
         coverage = builder.lookup.build_table(coverage_data)
         self.coverage_level = builder.value.register_value_producer(
             'vitamin_a_fortification.coverage_level',
-            source = coverage)
+            source=coverage)
         self.effectively_covered = builder.value.register_value_producer(
             'vitamin_a_fortification.effectively_covered',
             source=self.get_effectively_covered)
@@ -46,8 +46,7 @@ class VitaminAFortificationCoverage:
 
     def on_initialize_simulants(self, pop_data: 'SimulantData'):
         propensity = self.randomness.get_draw(pop_data.index)
-        cov = self.coverage_level(pop_data.index)
-        is_covered = cov < propensity
+        is_covered = self.is_covered(propensity)
         pop_update = pd.DataFrame({
             project_globals.VITAMIN_A_FORTIFICATION_PROPENSITY_COLUMN: propensity,
             project_globals.VITAMIN_A_COVERAGE_START_COLUMN: pd.NaT
@@ -57,9 +56,7 @@ class VitaminAFortificationCoverage:
 
     def on_time_step(self, event: 'Event'):
         pop = self.population_view.get(event.index, query='alive=="alive"')
-        cov = self.coverage_level(event.index)
-        propensity = pop[project_globals.VITAMIN_A_FORTIFICATION_PROPENSITY_COLUMN]
-        is_covered = cov < propensity
+        is_covered = self.is_covered(pop[project_globals.VITAMIN_A_FORTIFICATION_PROPENSITY_COLUMN])
         not_previously_covered = pop[project_globals.VITAMIN_A_COVERAGE_START_COLUMN].isna()
         newly_covered = is_covered & not_previously_covered
         pop.loc[newly_covered, project_globals.VITAMIN_A_COVERAGE_START_COLUMN] = event.time
@@ -74,6 +71,9 @@ class VitaminAFortificationCoverage:
         effectively_covered.name = 'value'
         return effectively_covered
 
+    def is_covered(self, propensity):
+        coverage = self.coverage_level(propensity.index)
+        return propensity < coverage
 
     @staticmethod
     def load_coverage_data(builder: 'Builder') -> float:
