@@ -130,11 +130,6 @@ class MortalityObserver(MortalityObserver_):
     def sub_components(self) -> List[ResultsStratifier]:
         return [self.stratifier]
 
-    def setup(self, builder: 'Builder'):
-        super().setup(builder)
-        if builder.components.get_components_by_type(VitaminADeficiency):
-            self.causes += [project_globals.VITAMIN_A_MODEL_NAME]
-
     def metrics(self, index, metrics):
         pop = self.population_view.get(index)
         pop.loc[pop.exit_time.isnull(), 'exit_time'] = self.clock()

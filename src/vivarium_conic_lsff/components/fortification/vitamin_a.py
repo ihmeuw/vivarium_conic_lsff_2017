@@ -56,7 +56,7 @@ class VitaminAFortificationCoverage:
         self.randomness = builder.randomness.get_stream(self.name)
         columns_created = [project_globals.VITAMIN_A_FORTIFICATION_PROPENSITY_COLUMN,
                            project_globals.VITAMIN_A_COVERAGE_START_COLUMN]
-        self.population_view = builder.population.get_view(columns_created)
+        self.population_view = builder.population.get_view(columns_created + ['tracked'])
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  creates_columns=columns_created,
                                                  requires_values=['vitamin_a_fortification.coverage_level'],
@@ -76,7 +76,7 @@ class VitaminAFortificationCoverage:
 
     def on_time_step(self, event: 'Event'):
         """Update coverage start time for all newly covered individuals."""
-        pop = self.population_view.get(event.index, query='alive=="alive"')
+        pop = self.population_view.get(event.index, query='tracked == True and alive=="alive"')
         is_covered = self.is_covered(pop[project_globals.VITAMIN_A_FORTIFICATION_PROPENSITY_COLUMN])
         not_previously_covered = pop[project_globals.VITAMIN_A_COVERAGE_START_COLUMN].isna()
         newly_covered = is_covered & not_previously_covered
