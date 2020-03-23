@@ -1,4 +1,5 @@
 import typing
+from typing import List
 
 import pandas as pd
 from vivarium_public_health.utilities import to_years
@@ -23,9 +24,33 @@ class FortificationIntervention:
         }
     }
 
+    def __init__(self):
+        self.folic_acid_intervention = FolicAcidFortificationIntervention()
+
+    @property
+    def name(self) -> str:
+        return 'fortification_intervention'
+
+    @property
+    def sub_components(self) -> List:
+        return [self.folic_acid_intervention]
+
+    def setup(self, builder: 'Builder'):
+        scenario = builder.configuration.fortification_intervention.scenario
+        if scenario == 'folic_acid_fortification_scale_up':
+            builder.value.register_value_modifier(
+                'folic_acid_fortification.coverage_level',
+                self.folic_acid_intervention.adjust_coverage_level)
+            builder.value.register_value_modifier(
+                'folic_acid_fortification.effective_coverage_level',
+                self.folic_acid_intervention.adjust_effective_coverage_level)
+
+
+class FolicAcidFortificationIntervention:
+
     @property
     def name(self):
-        return 'fortification_intervention'
+        return 'folic_acid_fortification_intervention'
 
     def setup(self, builder: 'Builder'):
         self.sim_start = pd.Timestamp(**builder.configuration.time.start.to_dict())
@@ -38,12 +63,6 @@ class FortificationIntervention:
         self.coverage_start = builder.lookup.build_table(coverage_start)
         coverage_end = self.load_coverage_data(builder, 'intervention_end')
         self.coverage_end = builder.lookup.build_table(coverage_end)
-        scenario = builder.configuration.fortification_intervention.scenario
-        if scenario == 'folic_acid_fortification_scale_up':
-            builder.value.register_value_modifier('folic_acid_fortification.coverage_level',
-                                                  self.adjust_coverage_level)
-            builder.value.register_value_modifier('folic_acid_fortification.effective_coverage_level',
-                                                  self.adjust_effective_coverage_level)
 
     def adjust_coverage_level(self, index, coverage):
         time_since_start = max(to_years(self.clock() - self.intervention_start), 0)
