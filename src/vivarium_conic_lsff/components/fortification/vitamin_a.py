@@ -1,3 +1,4 @@
+"""Vitamin a fortification model."""
 import typing
 
 import pandas as pd
@@ -14,12 +15,30 @@ if typing.TYPE_CHECKING:
 
 
 class VitaminAFortificationCoverage:
+    """Model of vitamin a fortification coverage.
+
+    This component manages both the population level coverage of vitamin
+    a fortification as well as whether individuals are effectively covered.
+    Effective coverage means an individual is consuming vitamin a fortified
+    goods and the fortified food is having an impact on their deficiency
+    probability.  There is a time delay between when an individual
+    starts consuming the fortified goods and when they start having an impact.
+
+    The initial population effective coverage is based on the coverage level
+    at simulation start (with the assumption that it has been constant
+    for all time in the past).  Newborns are assigned an effective coverage
+    based on current coverage level at birth.
+
+    """
 
     @property
-    def name(self):
+    def name(self) -> str:
+        """This component's canonical name."""
         return 'vitamin_a_fortification_coverage'
 
+    # noinspection PyAttributeOutsideInit
     def setup(self, builder: 'Builder'):
+        """Perform this component's setup."""
         self.clock = builder.time.clock()
 
         coverage_data = self.load_coverage_data(builder)
@@ -45,6 +64,7 @@ class VitaminAFortificationCoverage:
         builder.event.register_listener('time_step', self.on_time_step)
 
     def on_initialize_simulants(self, pop_data: 'SimulantData'):
+        """Create coverage propensity and coverage start time columns."""
         propensity = self.randomness.get_draw(pop_data.index)
         is_covered = self.is_covered(propensity)
         pop_update = pd.DataFrame({
@@ -55,6 +75,7 @@ class VitaminAFortificationCoverage:
         self.population_view.update(pop_update)
 
     def on_time_step(self, event: 'Event'):
+        """Update coverage start time for all newly covered individuals."""
         pop = self.population_view.get(event.index, query='alive=="alive"')
         is_covered = self.is_covered(pop[project_globals.VITAMIN_A_FORTIFICATION_PROPENSITY_COLUMN])
         not_previously_covered = pop[project_globals.VITAMIN_A_COVERAGE_START_COLUMN].isna()
@@ -62,40 +83,59 @@ class VitaminAFortificationCoverage:
         pop.loc[newly_covered, project_globals.VITAMIN_A_COVERAGE_START_COLUMN] = event.time
         self.population_view.update(pop)
 
-    def get_effectively_covered(self, index: pd.Index):
+    def get_effectively_covered(self, index: pd.Index) -> pd.Series:
+        """Get's all people who are covered and whose coverage is impacting
+        their vitamin a deficiency probability.
+
+        """
         pop = self.population_view.get(index)
         curr_time = self.clock()
         coverage_start_time = pop[project_globals.VITAMIN_A_COVERAGE_START_COLUMN]
         time_to_effect = self.time_to_effect(index)
+        # noinspection PyTypeChecker
         effectively_covered = (curr_time - coverage_start_time) > time_to_effect
         effectively_covered = effectively_covered.map({True: 'cat2', False: 'cat1'})
         effectively_covered.name = 'value'
         return effectively_covered
 
-    def is_covered(self, propensity):
+    def is_covered(self, propensity: pd.Series) -> pd.Series:
+        """Helper method for finding covered people from their propensity."""
         coverage = self.coverage_level(propensity.index)
+        # noinspection PyTypeChecker
         return propensity < coverage
 
     @staticmethod
     def load_coverage_data(builder: 'Builder') -> float:
+        """Load baseline coverage."""
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
         return sample_vitamin_a_coverage(location, draw, 'baseline')
 
     @staticmethod
     def load_time_to_effect_data(builder: 'Builder') -> float:
+        """Load delay between fortification start and effective coverage."""
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
         return sample_vitamin_a_time_to_effect(location, draw)
 
 
 class VitaminAFortificationEffect:
+    """Model of the impact of vitamin A fortification on vitamin A deficiency.
+
+    This component models a multiplicative effect of fortified foods on
+    vitamin A deficiency. Fortification does not apply to children under
+    6 months old so they can never be at risk.
+
+    """
 
     @property
     def name(self) -> str:
+        """This component's canonical name."""
         return 'vitamin_a_fortification_effect'
 
+    # noinspection PyAttributeOutsideInit
     def setup(self, builder: 'Builder'):
+        """Load data and construct value modifiers for this component."""
         relative_risk_data = self.load_relative_risk_data(builder)
         self.relative_risk = builder.lookup.build_table(relative_risk_data,
                                                         parameter_columns=['age'])
@@ -112,12 +152,14 @@ class VitaminAFortificationEffect:
                                               requires_columns=['age'])
 
     def adjust_vitamin_a_exposure_probability(self, index: pd.Index, exposure_probability: pd.Series) -> pd.Series:
+        """Value modifier for vitamin a deficiency exposure."""
         effectively_covered = self.effectively_covered(index)
         rr = self.relative_risk(index).lookup(index, effectively_covered)
         return exposure_probability * rr
 
     @staticmethod
-    def load_relative_risk_data(builder):
+    def load_relative_risk_data(builder: 'Builder') -> pd.DataFrame:
+        """Load rr data for fortification on vitamin a deficiency."""
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
         rr = sample_vitamin_a_relative_risk(location, draw)
@@ -131,7 +173,8 @@ class VitaminAFortificationEffect:
         return relative_risk
 
     @staticmethod
-    def load_population_attributable_fraction_data(builder: 'Builder'):
+    def load_population_attributable_fraction_data(builder: 'Builder') -> pd.DataFrame:
+        """Compute paf data for fortification on vitamin a deficiency."""
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
         rr = sample_vitamin_a_relative_risk(location, draw)
