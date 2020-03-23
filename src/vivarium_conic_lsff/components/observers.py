@@ -1,10 +1,9 @@
 from collections import Counter
-from itertools import product
-from typing import Dict
+import typing
+from typing import Dict, Iterable, List, Tuple, Union
 
 import pandas as pd
-from vivarium.framework.values import list_combiner
-from vivarium_public_health.metrics.disability import _disability_post_processor, get_years_lived_with_disability
+from vivarium_public_health.metrics.disability import get_years_lived_with_disability
 from vivarium_public_health.metrics import (MortalityObserver as MortalityObserver_,
                                             DisabilityObserver as DisabilityObserver_)
 from vivarium_public_health.metrics.utilities import (get_output_template, get_group_counts,
@@ -13,74 +12,85 @@ from vivarium_public_health.metrics.utilities import (get_output_template, get_g
                                                       get_age_bins, get_time_iterable)
 
 from vivarium_conic_lsff import globals as project_globals
+from vivarium_conic_lsff.components import VitaminADeficiency
+
+if typing.TYPE_CHECKING:
+    from vivarium.framework.engine import Builder
+    from vivarium.framework.event import Event
+    from vivarium.framework.population import SimulantData
 
 
-class DisabilityObserver(DisabilityObserver_):
+class ResultsStratifier:
+    """Centralized component for handling results stratification.
 
-    def setup(self, builder):
-        self.config = builder.configuration.metrics.disability
-        self.age_bins = get_age_bins(builder)
-        self.clock = builder.time.clock()
-        self.step_size = builder.time.step_size()
-        self.causes = project_globals.CAUSES_OF_DISABILITY
-        self.years_lived_with_disability = Counter()
-        self.disability_weight_pipelines = {cause: builder.value.get_value(f'{cause}.disability_weight')
-                                            for cause in self.causes}
+    This should be used as a sub-component for observers.  The observers
+    can then ask this component for population subgroups and labels during
+    results production and have this component manage adjustments to the
+    final column labels for the subgroups.
 
-        self.disability_weight = builder.value.register_value_producer(
-            'disability_weight',
-            source=lambda index: [pd.Series(0.0, index=index)],
-            preferred_combiner=list_combiner,
-            preferred_post_processor=_disability_post_processor)
+    """
 
-        columns_required = ['tracked', 'alive', 'years_lived_with_disability',
-                            project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN]
-        if self.config.by_age:
-            columns_required += ['age']
-        if self.config.by_sex:
-            columns_required += ['sex']
-        self.population_view = builder.population.get_view(columns_required)
-        builder.population.initializes_simulants(self.initialize_disability,
-                                                 creates_columns=['years_lived_with_disability'])
+    def __init__(self, observer_name: str):
+        self.name = f'{observer_name}_results_stratifier'
 
-        # FIXME: The state table is modified before the clock advances.
-        # In order to get an accurate representation of person time we need to look at
-        # the state table before anything happens.
-        builder.event.register_listener('time_step__prepare', self.on_time_step_prepare)
-        builder.value.register_value_modifier('metrics', modifier=self.metrics)
+    def setup(self, builder: 'Builder'):
+        """Perform this component's setup."""
+        # The only thing you should request here are resources necessary for
+        # results stratification.
+        pass
 
-    def on_time_step_prepare(self, event):
-        pop = self.population_view.get(event.index, query='tracked == True and alive == "alive"')
+    def group(self, population: pd.DataFrame) -> Iterable[Tuple[Tuple[str, ...], pd.DataFrame]]:
+        """Takes the full population and yields stratified subgroups.
 
-        for fortification_group in project_globals.FOLIC_ACID_FORTIFICATION_GROUPS:
-            pop_in_group = pop.loc[
-                pop[project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN] == fortification_group
-                ]
+        Parameters
+        ----------
+        population
+            The population to stratify.
 
-            ylds_this_step = get_years_lived_with_disability(pop_in_group, self.config.to_dict(),
-                                                             self.clock().year, self.step_size(),
-                                                             self.age_bins, self.disability_weight_pipelines, self.causes)
+        Yields
+        ------
+            A tuple of stratification labels and the population subgroup
+            corresponding to those labels.
 
-            ylds_this_step = {f'{k}_folic_acid_fortification_group_{fortification_group}': v
-                              for k, v in ylds_this_step.items()}
-            self.years_lived_with_disability.update(ylds_this_step)
+        """
+        return tuple(), population
 
-        pop.loc[:, 'years_lived_with_disability'] += self.disability_weight(pop.index)
-        self.population_view.update(pop)
+    @staticmethod
+    def update_labels(measure_data: Dict[str, float], labels: Tuple[str, ...]) -> Dict[str, float]:
+        """Updates a dict of measure data with stratification labels.
+
+        Parameters
+        ----------
+        measure_data
+            The measure data with unstratified column names.
+        labels
+            The stratification labels. Yielded along with the population
+            subgroup the measure data was produced from by a call to
+            :obj:`ResultsStratifier.group`.
+
+        Returns
+        -------
+            The measure data with column names updated with the stratification
+            labels.
+
+        """
+        return measure_data
 
 
 class MortalityObserver(MortalityObserver_):
 
-    def setup(self, builder):
+    def __init__(self):
+        super().__init__()
+        self.stratifier = ResultsStratifier(self.name)
+
+    @property
+    def sub_components(self) -> List[ResultsStratifier]:
+        return [self.stratifier]
+
+    def setup(self, builder: 'Builder'):
         super().setup(builder)
-        columns_required = ['tracked', 'alive', 'entrance_time', 'exit_time', 'cause_of_death',
-                            'years_of_life_lost', 'age',
-                            project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN]
-        if self.config.by_sex:
-            columns_required += ['sex']
-        self.age_bins = get_age_bins(builder)
-        # Overwrites attribute set in parent class
-        self.population_view = builder.population.get_view(columns_required)
+        if builder.components.get_components_by_type(VitaminADeficiency):
+            self.causes += [project_globals.VITAMIN_A_MODEL_NAME]
 
     def metrics(self, index, metrics):
         pop = self.population_view.get(index)
@@ -89,21 +99,16 @@ class MortalityObserver(MortalityObserver_):
         measure_getters = (
             # FIXME: get person time needs to happen every time step.
             (get_person_time, ()),
-            (get_deaths, (project_globals.CAUSES_OF_DEATH,)),
-            (get_years_of_life_lost, (self.life_expectancy, project_globals.CAUSES_OF_DEATH)),
+            (get_deaths, (self.causes,)),
+            (get_years_of_life_lost, (self.life_expectancy, self.causes)),
         )
 
-        for fortification_group in project_globals.FOLIC_ACID_FORTIFICATION_GROUPS:
-            pop_in_group = pop.loc[
-                pop[project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN] == fortification_group
-                ]
-
+        for labels, pop_in_group in self.stratifier.group(pop):
             base_args = (pop_in_group, self.config.to_dict(), self.start_time, self.clock(), self.age_bins)
 
             for measure_getter, extra_args in measure_getters:
                 measure_data = measure_getter(*base_args, *extra_args)
-                measure_data = {f'{k}_folic_acid_fortification_group_{fortification_group}': v
-                                for k, v in measure_data.items()}
+                measure_data = self.stratifier.update_labels(measure_data, labels)
                 metrics.update(measure_data)
 
         the_living = pop[(pop.alive == 'alive') & pop.tracked]
@@ -115,29 +120,43 @@ class MortalityObserver(MortalityObserver_):
         return metrics
 
 
+class DisabilityObserver(DisabilityObserver_):
+
+    def __init__(self):
+        super().__init__()
+        self.stratifier = ResultsStratifier(self.name)
+
+    @property
+    def sub_components(self) -> List[ResultsStratifier]:
+        return [self.stratifier]
+
+    # noinspection PyAttributeOutsideInit
+    def setup(self, builder: 'Builder'):
+        super().setup(builder)
+        if builder.components.get_components_by_type(VitaminADeficiency):
+            self.causes += [project_globals.VITAMIN_A_MODEL_NAME]
+            self.disability_weight_pipelines = {cause: builder.value.get_value(f'{cause}.disability_weight')
+                                                for cause in self.causes}
+
+    def on_time_step_prepare(self, event: 'Event'):
+        pop = self.population_view.get(event.index, query='tracked == True and alive == "alive"')
+        self.update_metrics(pop)
+
+        pop.loc[:, project_globals.TOTAL_YLDS_COLUMN] += self.disability_weight(pop.index)
+        self.population_view.update(pop)
+
+    def update_metrics(self, pop: pd.DataFrame):
+        for labels, pop_in_group in self.stratifier.group(pop):
+            ylds_this_step = get_years_lived_with_disability(pop_in_group, self.config.to_dict(),
+                                                             self.clock().year, self.step_size(),
+                                                             self.age_bins, self.disability_weight_pipelines,
+                                                             self.causes)
+            ylds_this_step = self.stratifier.update_labels(ylds_this_step, labels)
+            self.years_lived_with_disability.update(ylds_this_step)
+
+
 class DiseaseObserver:
-    """Observes disease counts, person time, and prevalent cases for a cause.
-    By default, this observer computes aggregate susceptible person time
-    and counts of disease cases over the entire simulation.  It can be
-    configured to bin these into age_groups, sexes, and years by setting
-    the ``by_age``, ``by_sex``, and ``by_year`` flags, respectively.
-    It also records prevalent cases on a particular sample date each year.
-    These will also be binned based on the flags set for the observer.
-    Additionally, the sample date is configurable and defaults to July 1st
-    of each year.
-    In the model specification, your configuration for this component should
-    be specified as, e.g.:
-    .. code-block:: yaml
-        configuration:
-            metrics:
-                {YOUR_DISEASE_NAME}_observer:
-                    by_age: True
-                    by_year: False
-                    by_sex: True
-                    prevalence_sample_date:
-                        month: 4
-                        day: 10
-    """
+    """Observes transition counts and person time for a cause."""
     configuration_defaults = {
         'metrics': {
             'disease_observer': {
@@ -153,12 +172,17 @@ class DiseaseObserver:
         self.configuration_defaults = {
             'metrics': {f'{disease}_observer': DiseaseObserver.configuration_defaults['metrics']['disease_observer']}
         }
+        self.stratifier = ResultsStratifier(self.name)
 
     @property
-    def name(self):
+    def name(self) -> str:
         return f'disease_observer.{self.disease}'
 
-    def setup(self, builder):
+    @property
+    def sub_components(self) -> List[ResultsStratifier]:
+        return [self.stratifier]
+
+    def setup(self, builder: 'Builder'):
         self.config = builder.configuration['metrics'][f'{self.disease}_observer'].to_dict()
         self.clock = builder.time.clock()
         self.age_bins = get_age_bins(builder)
@@ -172,10 +196,7 @@ class DiseaseObserver:
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  creates_columns=[self.previous_state_column])
 
-        columns_required = ['alive', f'{self.disease}', self.previous_state_column,
-                            project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN]
-        for state in self.states:
-            columns_required.append(f'{state}_event_time')
+        columns_required = ['alive', f'{self.disease}', self.previous_state_column]
         if self.config['by_age']:
             columns_required += ['age']
         if self.config['by_sex']:
@@ -189,24 +210,19 @@ class DiseaseObserver:
         builder.event.register_listener('time_step__prepare', self.on_time_step_prepare)
         builder.event.register_listener('collect_metrics', self.on_collect_metrics)
 
-    def on_initialize_simulants(self, pop_data):
+    def on_initialize_simulants(self, pop_data: 'SimulantData'):
         self.population_view.update(pd.Series('', index=pop_data.index, name=self.previous_state_column))
 
-    def on_time_step_prepare(self, event):
+    def on_time_step_prepare(self, event: 'Event'):
         pop = self.population_view.get(event.index)
-
         # Ignoring the edge case where the step spans a new year.
         # Accrue all counts and time to the current year.
-        for fortification_group in project_globals.FOLIC_ACID_FORTIFICATION_GROUPS:
-            pop_in_group = pop.loc[
-                pop[project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN] == fortification_group
-                ]
-
+        for labels, pop_in_group in self.stratifier.group(pop):
             for state in self.states:
+                # noinspection PyTypeChecker
                 state_person_time_this_step = get_state_person_time(pop_in_group, self.config, self.disease, state,
                                                                     self.clock().year, event.step_size, self.age_bins)
-                state_person_time_this_step = {f'{k}_folic_acid_fortification_group_{fortification_group}': v
-                                               for k, v in state_person_time_this_step.items()}
+                state_person_time_this_step = self.stratifier.update_labels(state_person_time_this_step, labels)
                 self.person_time.update(state_person_time_this_step)
 
         # This enables tracking of transitions between states
@@ -214,31 +230,28 @@ class DiseaseObserver:
         prior_state_pop[self.previous_state_column] = prior_state_pop[self.disease]
         self.population_view.update(prior_state_pop)
 
-    def on_collect_metrics(self, event):
+    def on_collect_metrics(self, event: 'Event'):
         pop = self.population_view.get(event.index)
-
-        for fortification_group in project_globals.FOLIC_ACID_FORTIFICATION_GROUPS:
-            pop_in_group = pop.loc[
-                pop[project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN] == fortification_group
-                ]
-
+        for labels, pop_in_group in self.stratifier.group(pop):
             for transition in self.transitions:
+                # noinspection PyTypeChecker
                 transition_counts_this_step = get_transition_count(pop_in_group, self.config, self.disease, transition,
                                                                    event.time, self.age_bins)
-                transition_counts_this_step = {f'{k}_folic_acid_fortification_group_{fortification_group}': v
-                                               for k, v in transition_counts_this_step.items()}
+                transition_counts_this_step = self.stratifier.update_labels(transition_counts_this_step, labels)
                 self.counts.update(transition_counts_this_step)
 
-    def metrics(self, index, metrics):
+    def metrics(self, index: pd.Index, metrics: Dict[str, float]):
         metrics.update(self.counts)
         metrics.update(self.person_time)
         return metrics
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"DiseaseObserver({self.disease})"
 
 
-def get_state_person_time(pop, config, disease, state, current_year, step_size, age_bins):
+def get_state_person_time(pop: pd.DataFrame, config: Dict[str, bool],
+                          disease: str, state: str, current_year: Union[str, int],
+                          step_size: pd.Timedelta, age_bins: pd.DataFrame) -> Dict[str, float]:
     """Custom person time getter that handles state column name assumptions"""
     base_key = get_output_template(**config).substitute(measure=f'{state}_person_time',
                                                         year=current_year)
@@ -248,10 +261,12 @@ def get_state_person_time(pop, config, disease, state, current_year, step_size, 
     return person_time
 
 
-def get_transition_count(pop, config, disease, transition, event_time, age_bins):
-    from_state, to_state = transition.split('_TO_')
-    event_this_step = ((pop[f'previous_{disease}'] == from_state)
-                       & (pop[disease] == to_state))
+def get_transition_count(pop: pd.DataFrame, config: Dict[str, bool],
+                         disease: str, transition: project_globals.TransitionString,
+                         event_time: pd.Timestamp, age_bins: pd.DataFrame) -> Dict[str, float]:
+    """Counts transitions that occurred this step."""
+    event_this_step = ((pop[f'previous_{disease}'] == transition.from_state)
+                       & (pop[disease] == transition.to_state))
     transitioned_pop = pop.loc[event_this_step]
     base_key = get_output_template(**config).substitute(measure=f'{transition}_event_count',
                                                         year=event_time.year)
@@ -273,9 +288,16 @@ class LiveBirthWithNTDObserver:
         }
     }
 
+    def __init__(self):
+        self.stratifier = ResultsStratifier(self.name)
+
     @property
     def name(self):
         return project_globals.NTD_OBSERVER
+
+    @property
+    def sub_components(self) -> List[ResultsStratifier]:
+        return [self.stratifier]
 
     def setup(self, builder):
         self.disease = project_globals.NTD_MODEL_NAME
@@ -285,8 +307,7 @@ class LiveBirthWithNTDObserver:
         self._sim_start = pd.Timestamp(**builder.configuration.time.start.to_dict())
         self._sim_end = pd.Timestamp(**builder.configuration.time.end.to_dict())
 
-        columns_required = ['alive', f'{self.disease}', 'entrance_time', 'tracked',
-                            project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN]
+        columns_required = ['alive', f'{self.disease}', 'entrance_time', 'tracked']
         if self.config['by_sex']:
             columns_required.append('sex')
 
@@ -295,15 +316,9 @@ class LiveBirthWithNTDObserver:
 
     def metrics(self, index, metrics):
         pop = self.population_view.get(index)
-
-        for fortification_group in project_globals.FOLIC_ACID_FORTIFICATION_GROUPS:
-            pop_in_group = pop.loc[
-                pop[project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN] == fortification_group
-                ]
-
+        for labels, pop_in_group in self.stratifier.group(pop):
             births = get_births(pop_in_group, self.config, self._sim_start, self._sim_end)
-            births = {f'{k}_folic_acid_fortification_group_{fortification_group}': v
-                      for k, v in births.items()}
+            births = self.stratifier.update_labels(births, labels)
             metrics.update(births)
         return metrics
 
@@ -343,14 +358,14 @@ def get_births(pop: pd.DataFrame, config: Dict[str, bool], sim_start: pd.Timesta
         born_in_span = pop.query(f'"{start}" <= entrance_time and entrance_time < "{end}"')
 
         cat_year_key = base_key.substitute(measure='live_births', year=year)
-        filter = base_filter
-        group_births = get_group_counts(born_in_span, filter, cat_year_key, config, pd.DataFrame())
+        group_births = get_group_counts(born_in_span, base_filter, cat_year_key, config, pd.DataFrame())
         births.update(group_births)
 
         cat_year_key = base_key.substitute(measure='born_with_ntds', year=year)
-        filter = base_filter + f'{project_globals.NTD_MODEL_NAME} == "{project_globals.NTD_MODEL_NAME}"'
+        filter_update = f'{project_globals.NTD_MODEL_NAME} == "{project_globals.NTD_MODEL_NAME}"'
         empty_age_bins = pd.DataFrame()
-        group_ntd_births = get_group_counts(born_in_span, filter, cat_year_key, config, empty_age_bins)
+        group_ntd_births = get_group_counts(born_in_span, base_filter + filter_update,
+                                            cat_year_key, config, empty_age_bins)
         births.update(group_ntd_births)
     return births
 
