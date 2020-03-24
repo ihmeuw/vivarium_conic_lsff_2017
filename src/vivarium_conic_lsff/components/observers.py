@@ -13,7 +13,7 @@ from vivarium_public_health.metrics.utilities import (get_output_template, get_g
                                                       get_age_bins, get_time_iterable)
 
 from vivarium_conic_lsff import globals as project_globals
-from vivarium_conic_lsff.components import VitaminADeficiency
+from vivarium_conic_lsff.components import VitaminADeficiency, IronDeficiency
 
 if typing.TYPE_CHECKING:
     from vivarium.framework.engine import Builder
@@ -173,8 +173,11 @@ class DisabilityObserver(DisabilityObserver_):
         super().setup(builder)
         if builder.components.get_components_by_type(VitaminADeficiency):
             self.causes += [project_globals.VITAMIN_A_MODEL_NAME]
-            self.disability_weight_pipelines = {cause: builder.value.get_value(f'{cause}.disability_weight')
-                                                for cause in self.causes}
+        if builder.components.get_components_by_type(IronDeficiency):
+            self.causes += [project_globals.IRON_DEFICIENCY_MODEL_NAME]
+
+        self.disability_weight_pipelines = {cause: builder.value.get_value(f'{cause}.disability_weight')
+                                            for cause in self.causes}
 
     def on_time_step_prepare(self, event: 'Event'):
         pop = self.population_view.get(event.index, query='tracked == True and alive == "alive"')

@@ -21,7 +21,7 @@ DROP_COLUMNS = ['measure']
 #     # 'scenario'
 # ]
 
-
+# TODO - always check if new stratification needed
 COLUMN_SORT_ORDER = [
     'year',
     'age_group',
@@ -31,7 +31,8 @@ COLUMN_SORT_ORDER = [
     'treatment_group',
     'birth_weight',
     'gestational_age',
-    'fortification_group',
+    'folic_acid_fortification_group',
+    'vitamin_a_fortification_group',
     'measure',
     'input_draw'
 ]
@@ -160,7 +161,8 @@ def split_processing_column(data, with_cause):
     data['year'], data['sex'] = year_sex.str.split('_among_').str
 
     process = process.str.split('age_group_').str[1]
-    data['age_group'], data['fortification_group'] = process.str.split('_folic_acid_fortification_group_').str
+    data['age_group'], process = process.str.split('_folic_acid_').str
+    data['folic_acid_fortification_group'], data['vitamin_a_fortification_group'] = process.str.split('_vitamin_a_').str
     return data.drop(columns='process')
 
 
@@ -190,7 +192,9 @@ def get_births(data, with_ntds=False):
     data = pivot_data(data[project_globals.RESULT_COLUMNS(key) + GROUPBY_COLUMNS])
     data['measure'] = 'live_births_with_ntds' if with_ntds else 'live_births'
     data['year'], process = data.process.str.split('_in_').str[1].str.split('_among_').str
-    data['sex'], data['fortification_group'] = process.str.split('_folic_acid_fortification_group_').str
+    data['sex'], process = process.str.split('_folic_acid_').str
+    # ignore the vitamin A portion, it is not relevant to birth data
+    data['folic_acid_fortification_group'], _ = process.str.split('_vitamin_a_').str
     return sort_data(data.drop(columns='process'))
 
 
