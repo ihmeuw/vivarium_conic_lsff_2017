@@ -106,7 +106,6 @@ def sample_folic_acid_relative_risk(location: str, draw: int) -> float:
 
 
 VITAMIN_A_COVERAGE = {
-    # TODO - numbers for Ethiopia are stubbed
     'Ethiopia': [
         {
             'baseline': BetaParams(
@@ -115,17 +114,15 @@ VITAMIN_A_COVERAGE = {
                 alpha=0.1,
                 beta=9.9,
             ),
-            'intervention_start': BetaParams(
-                upper_bound=1,
-                lower_bound=0,
-                alpha=0.5,
-                beta=3.1,
+            'intervention_start': BetaParams.from_statistics(
+                mean=0.440,
+                upper_bound=0.540,
+                lower_bound=0.340,
             ),
-            'intervention_end': BetaParams(
-                upper_bound=1,
-                lower_bound=0,
-                alpha=0.8,
-                beta=2.36,
+            'intervention_end': BetaParams.from_statistics(
+                mean=0.550,
+                upper_bound=0.650,
+                lower_bound=0.450,
             ),
             'weight': 1,
         },
