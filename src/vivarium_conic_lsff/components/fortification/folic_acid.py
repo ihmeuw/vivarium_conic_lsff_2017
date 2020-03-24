@@ -42,7 +42,7 @@ class FolicAcidFortificationCoverage:
         else:  # New sims
             draw = self.randomness.get_draw(pop_data.index)
             effective_coverage = self.effective_coverage_level(pop_data.index)
-            pop_update = pd.Series((draw < effective_coverage).map({True: 'true', False: 'false'}),
+            pop_update = pd.Series((draw < effective_coverage).map({True: 'covered', False: 'uncovered'}),
                                    index=pop_data.index,
                                    name=self._column)
         self.population_view.update(pop_update)
