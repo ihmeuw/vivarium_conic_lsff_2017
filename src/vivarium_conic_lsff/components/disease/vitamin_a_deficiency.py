@@ -112,7 +112,8 @@ class VitaminADeficiency:
         propensity = self.randomness.get_draw(pop_data.index)
 
         exposure = self._get_sample_exposure(propensity)
-        disease_status = exposure.map({'cat1': project_globals.VITAMIN_A_WITH_CONDITION_STATE_NAME, 'cat2': project_globals.VITAMIN_A_SUSCEPTIBLE_STATE_NAME})
+        disease_status = exposure.map({'cat1': project_globals.VITAMIN_A_WITH_CONDITION_STATE_NAME,
+                                       'cat2': project_globals.VITAMIN_A_SUSCEPTIBLE_STATE_NAME})
         pop_update = pd.DataFrame({
             self.name: disease_status,
             project_globals.VITAMIN_A_BAD_EVENT_TIME: pd.NaT,
@@ -124,8 +125,8 @@ class VitaminADeficiency:
         self.population_view.update(pop_update)
 
     def on_time_step(self, event: 'Event'):
-        pop = self.population_view.get(event.index)
-        exposure = self.exposure(event.index)
+        pop = self.population_view.get(event.index, query='alive =="alive"')
+        exposure = self.exposure(pop.index)
 
         current_disease_status = exposure.map({'cat1': project_globals.VITAMIN_A_WITH_CONDITION_STATE_NAME,
                                                'cat2': project_globals.VITAMIN_A_SUSCEPTIBLE_STATE_NAME})

@@ -1,4 +1,5 @@
 from collections import Counter
+import itertools
 import typing
 from typing import Dict, Iterable, List, Tuple, Union
 
@@ -37,7 +38,13 @@ class ResultsStratifier:
         """Perform this component's setup."""
         # The only thing you should request here are resources necessary for
         # results stratification.
-        pass
+        self.population_view = builder.population.get_view([
+            project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN,
+            project_globals.VITAMIN_A_COVERAGE_START_COLUMN,
+            'age',
+            'tracked',  # Ensure we get the full population.
+        ])
+        self.vitamin_a_coverage = builder.value.get_value('vitamin_a_fortification.effectively_covered')
 
     def group(self, population: pd.DataFrame) -> Iterable[Tuple[Tuple[str, ...], pd.DataFrame]]:
         """Takes the full population and yields stratified subgroups.
@@ -53,7 +60,18 @@ class ResultsStratifier:
             corresponding to those labels.
 
         """
-        return tuple(), population
+        folic_acid_covered = self.folic_acid_covered(population)
+        vitamin_a_covered = self.vitamin_a_covered(population)
+
+        groups = itertools.product(project_globals.FOLIC_ACID_FORTIFICATION_GROUPS,
+                                   project_globals.VITAMIN_A_FORTIFICATION_GROUPS)
+        for folic_acid_group, vitamin_a_group in groups:
+            if population.empty:
+                pop_in_group = population
+            else:
+                pop_in_group = population.loc[(folic_acid_covered == folic_acid_group)
+                                              & (vitamin_a_covered == vitamin_a_group)]
+            yield (folic_acid_group, vitamin_a_group), pop_in_group
 
     @staticmethod
     def update_labels(measure_data: Dict[str, float], labels: Tuple[str, ...]) -> Dict[str, float]:
@@ -74,7 +92,32 @@ class ResultsStratifier:
             labels.
 
         """
+        folic_acid_group, vitamin_a_group = labels
+        measure_data = {f'{k}_folic_acid_{folic_acid_group}_vitamin_a_{vitamin_a_group}': v
+                        for k, v in measure_data.items()}
         return measure_data
+
+    def folic_acid_covered(self, population: pd.DataFrame) -> pd.Series:
+        pop = self.population_view.get(population.index)
+        return pop[project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN]
+
+    def vitamin_a_covered(self, population: pd.DataFrame) -> pd.Series:
+        pop = self.population_view.get(population.index)
+        raw_coverage = self.vitamin_a_coverage(population.index).map({'cat1': 'uncovered',
+                                                                      'cat2': 'effectively_covered'})
+        started = ~pop[project_globals.VITAMIN_A_COVERAGE_START_COLUMN].isnull()
+        underage = pop.age <= 0.5
+        uncovered = (raw_coverage == 'uncovered') & ~started
+        covered = (
+                ((raw_coverage == 'uncovered') & started)
+                | ((raw_coverage == 'effectively_covered') & underage)
+        )
+        effectively_covered = (raw_coverage == 'effectively_covered') & ~underage
+
+        raw_coverage.loc[uncovered] = 'uncovered'
+        raw_coverage.loc[covered] = 'covered'
+        raw_coverage.loc[effectively_covered] = 'effectively_covered'
+        return raw_coverage
 
 
 class MortalityObserver(MortalityObserver_):
@@ -86,11 +129,6 @@ class MortalityObserver(MortalityObserver_):
     @property
     def sub_components(self) -> List[ResultsStratifier]:
         return [self.stratifier]
-
-    def setup(self, builder: 'Builder'):
-        super().setup(builder)
-        if builder.components.get_components_by_type(VitaminADeficiency):
-            self.causes += [project_globals.VITAMIN_A_MODEL_NAME]
 
     def metrics(self, index, metrics):
         pop = self.population_view.get(index)
