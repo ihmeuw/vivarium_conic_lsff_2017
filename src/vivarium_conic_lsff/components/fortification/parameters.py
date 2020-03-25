@@ -106,7 +106,6 @@ def sample_folic_acid_relative_risk(location: str, draw: int) -> float:
 
 
 VITAMIN_A_COVERAGE = {
-    # TODO - numbers for Ethiopia are stubbed
     'Ethiopia': [
         {
             'baseline': BetaParams(
@@ -115,17 +114,15 @@ VITAMIN_A_COVERAGE = {
                 alpha=0.1,
                 beta=9.9,
             ),
-            'intervention_start': BetaParams(
-                upper_bound=1,
-                lower_bound=0,
-                alpha=0.5,
-                beta=3.1,
+            'intervention_start': BetaParams.from_statistics(
+                mean=0.440,
+                upper_bound=0.540,
+                lower_bound=0.340,
             ),
-            'intervention_end': BetaParams(
-                upper_bound=1,
-                lower_bound=0,
-                alpha=0.8,
-                beta=2.36,
+            'intervention_end': BetaParams.from_statistics(
+                mean=0.550,
+                upper_bound=0.650,
+                lower_bound=0.450,
             ),
             'weight': 1,
         },
@@ -197,6 +194,11 @@ VITAMIN_A_FORTIFICATION_RELATIVE_RISK = LogNormParams.from_statistics(
     upper_bound=5.26
 )
 
+VITAMIN_A_FORTIFICATION_TIME_TO_EFFECT = LogNormParams.from_statistics(
+    median=5/12,
+    upper_bound=1
+)
+
 
 def sample_vitamin_a_coverage(location: str, draw: int, coverage_time: str) -> float:
     seed = get_hash(f'vitamin_a_fortification_coverage_draw_{draw}_location_{location}')
@@ -207,4 +209,9 @@ def sample_vitamin_a_coverage(location: str, draw: int, coverage_time: str) -> f
 def sample_vitamin_a_relative_risk(location: str, draw: int) -> float:
     seed = get_hash(f'vitamin_a_fortification_relative_risk_draw_{draw}_location_{location}')
     return sample_lognormal_distribution(seed, VITAMIN_A_FORTIFICATION_RELATIVE_RISK)
+
+
+def sample_vitamin_a_time_to_effect(location: str, draw: int) -> float:
+    seed = get_hash(f'vitamin_a_fortification_time_to_effect_draw_{draw}_location_{location}')
+    return sample_lognormal_distribution(seed, VITAMIN_A_FORTIFICATION_TIME_TO_EFFECT)
 
