@@ -1,3 +1,3 @@
-from .folic_acid import FolicAcidFortificationCoverage, FolicAcidFortificationEffect
+from .folic_acid import FolicAcidAndIronFortificationCoverage, FolicAcidFortificationEffect
 from .intervention import FortificationIntervention
 from .vitamin_a import VitaminAFortificationCoverage, VitaminAFortificationEffect

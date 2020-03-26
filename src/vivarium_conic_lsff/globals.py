@@ -533,6 +533,8 @@ class __SCENARIOS(NamedTuple):
 
 SCENARIOS = __SCENARIOS()
 
+IRON_FOLIC_ACID_RANDOMNESS = 'common_iron_folic_acid_randomness_key'
+
 FOLIC_ACID_DELAY = pd.Timedelta(days=365.25)
 FOLIC_ACID_ANNUAL_PROPORTION_INCREASE = 0.1
 FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN = 'mother_ate_folic_acid_fortified_food'
@@ -542,6 +544,8 @@ VITAMIN_A_FORTIFICATION_PROPENSITY_COLUMN = 'vitamin_a_fortification_propensity'
 VITAMIN_A_COVERAGE_START_COLUMN = 'vitamin_a_coverage_start'
 VITAMIN_A_ANNUAL_PROPORTION_INCREASE = 0.1
 VITAMIN_A_FORTIFICATION_GROUPS = ['uncovered', 'covered', 'effectively_covered']
+
+IRON_FORTIFICATION_COVERAGE_COLUMN = 'mother_ate_iron_fortified_food'
 
 #################################
 # Results columns and variables #
