@@ -21,7 +21,7 @@ components:
         - LBWSGRisk()
         - LBWSGRiskEffect('cause.all_causes.mortality_hazard')
 
-        - FolicAcidFortificationCoverage()
+        - FolicAcidAndIronFortificationCoverage()
         - FolicAcidFortificationEffect()
         - FortificationIntervention()
 
