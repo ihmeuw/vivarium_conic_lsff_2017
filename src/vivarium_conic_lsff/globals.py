@@ -546,6 +546,7 @@ VITAMIN_A_ANNUAL_PROPORTION_INCREASE = 0.1
 VITAMIN_A_FORTIFICATION_GROUPS = ['uncovered', 'covered', 'effectively_covered']
 
 IRON_FORTIFICATION_COVERAGE_COLUMN = 'mother_ate_iron_fortified_food'
+IRON_COVERAGE_AGE_AT_START_COLUMN = 'iron_coverage_age_at_start'
 
 #################################
 # Results columns and variables #

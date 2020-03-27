@@ -12,7 +12,6 @@ if typing.TYPE_CHECKING:
     from vivarium.framework.population import SimulantData
 
 
-
 class FolicAcidAndIronFortificationCoverage:
 
     @property
@@ -44,22 +43,27 @@ class FolicAcidAndIronFortificationCoverage:
         self._common_key = project_globals.IRON_FOLIC_ACID_RANDOMNESS
         self.randomness = builder.randomness.get_stream(self._common_key)
 
-        # tracking columns for maternal fortification status
+        # tracking columns for maternal fortification status and coverage age start
         self._fa_column = project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN
         self._iron_column = project_globals.IRON_FORTIFICATION_COVERAGE_COLUMN
+        self._iron_coverage_age = project_globals.IRON_COVERAGE_AGE_AT_START_COLUMN
+        created_columns = [self._fa_column, self._iron_column, self._iron_coverage_age]
 
-        self.population_view = builder.population.get_view([self._fa_column, self._iron_column])
+        self.population_view = builder.population.get_view(created_columns)
 
         builder.population.initializes_simulants(self.on_initialize_simulants,
-                                                 creates_columns=[self._fa_column, self._iron_column],
+                                                 creates_columns=created_columns,
                                                  requires_values=['folic_acid_fortification.effective_coverage_level',
                                                                   'iron_fortification.effective_coverage_level'],
                                                  requires_streams=[self._common_key])
+        builder.event.register_listener('time_step', self.on_time_step)
+
 
     def on_initialize_simulants(self, pop_data: 'SimulantData'):
         if pop_data.user_data['sim_state'] == 'setup':  # Initial population
             update_folic_acid = pd.Series('unknown', index=pop_data.index, name=self._fa_column)
             update_iron = pd.Series('unknown', index=pop_data.index, name=self._iron_column)
+            update_coverage_age_start = pd.Series(pd.NaT, index=pop_data.index, name=self._iron_coverage_age)
         else:  # New sims
             draw = self.randomness.get_draw(pop_data.index)
             effective_coverage_fa = self.fa_effective_coverage_level(pop_data.index)
@@ -70,8 +74,21 @@ class FolicAcidAndIronFortificationCoverage:
             update_iron = pd.Series((draw < effective_coverage_iron).map({True: 'covered', False: 'uncovered'}),
                                    index=pop_data.index,
                                    name=self._iron_column)
-        pop_update = pd.concat([update_folic_acid, update_iron], axis=1, keys=[self._fa_column, self._iron_column])
+            update_coverage_age_start = pd.Series((update_folic_acid=='covered').map({True: 0.0, False: pd.NaT}),
+                                   index=pop_data.index,
+                                   name=self._iron_coverage_age)
+
+        pop_update = pd.DataFrame({
+            self._fa_column: update_folic_acid,
+            self._iron_column: update_iron,
+            self._iron_coverage_age: update_coverage_age_start
+        }, pop_data.index)
         self.population_view.update(pop_update)
+
+
+    def on_time_step(self, event: 'Event'):
+
+
 
     @staticmethod
     def load_coverage_data_folic_acid(builder: 'Builder') -> float:
