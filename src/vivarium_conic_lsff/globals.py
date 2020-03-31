@@ -547,6 +547,7 @@ VITAMIN_A_FORTIFICATION_GROUPS = ['uncovered', 'covered', 'effectively_covered']
 
 IRON_FORTIFICATION_COVERAGE_COLUMN = 'mother_ate_iron_fortified_food'
 IRON_COVERAGE_AGE_AT_START_COLUMN = 'iron_coverage_age_at_start'
+IRON_FORTIFICATION_PROPENSITY_COLUMN = 'iron_fortification_propensity'
 
 #################################
 # Results columns and variables #

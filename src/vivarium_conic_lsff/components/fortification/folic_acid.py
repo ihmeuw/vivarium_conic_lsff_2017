@@ -1,6 +1,7 @@
 import typing
 
 import pandas as pd
+import numpy as np
 
 from vivarium_conic_lsff.components.fortification.parameters import (sample_folic_acid_coverage,
                                                                      sample_folic_acid_relative_risk,
@@ -9,6 +10,7 @@ from vivarium_conic_lsff import globals as project_globals
 
 if typing.TYPE_CHECKING:
     from vivarium.framework.engine import Builder
+    from vivarium.framework.event import Event
     from vivarium.framework.population import SimulantData
 
 
@@ -45,9 +47,10 @@ class FolicAcidAndIronFortificationCoverage:
 
         # tracking columns for maternal fortification status and coverage age start
         self._fa_column = project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN
-        self._iron_column = project_globals.IRON_FORTIFICATION_COVERAGE_COLUMN
+        self._iron_fortified_column = project_globals.IRON_FORTIFICATION_COVERAGE_COLUMN
         self._iron_coverage_age = project_globals.IRON_COVERAGE_AGE_AT_START_COLUMN
-        created_columns = [self._fa_column, self._iron_column, self._iron_coverage_age]
+        self._iron_fort_propensity = project_globals.IRON_FORTIFICATION_PROPENSITY_COLUMN
+        created_columns = [self._fa_column, self._iron_fortified_column, self._iron_coverage_age, self._iron_fort_propensity]
 
         self.population_view = builder.population.get_view(created_columns)
 
@@ -62,33 +65,55 @@ class FolicAcidAndIronFortificationCoverage:
     def on_initialize_simulants(self, pop_data: 'SimulantData'):
         if pop_data.user_data['sim_state'] == 'setup':  # Initial population
             update_folic_acid = pd.Series('unknown', index=pop_data.index, name=self._fa_column)
-            update_iron = pd.Series('unknown', index=pop_data.index, name=self._iron_column)
-            update_coverage_age_start = pd.Series(pd.NaT, index=pop_data.index, name=self._iron_coverage_age)
+            update_iron = pd.Series('unknown', index=pop_data.index, name=self._iron_fortified_column)
+
+            propensity = self.randomness.get_draw(pop_data.index)
+            is_covered = self.is_covered(propensity)
+            update_iron_coverage_age_start = pd.Series((is_covered).map({True: 0.0, False: np.nan}),
+                                                       index=pop_data.index,
+                                                       name=self._iron_coverage_age)
+            pop_update = pd.DataFrame({
+                self._iron_fort_propensity: propensity,
+            }, pop_data.index)
+            self.population_view.update(pop_update)
         else:  # New sims
             draw = self.randomness.get_draw(pop_data.index)
+
             effective_coverage_fa = self.fa_effective_coverage_level(pop_data.index)
             update_folic_acid = pd.Series((draw < effective_coverage_fa).map({True: 'covered', False: 'uncovered'}),
-                                   index=pop_data.index,
-                                   name=self._fa_column)
+                                          index=pop_data.index,
+                                          name=self._fa_column)
+
             effective_coverage_iron = self.iron_effective_coverage_level(pop_data.index)
             update_iron = pd.Series((draw < effective_coverage_iron).map({True: 'covered', False: 'uncovered'}),
-                                   index=pop_data.index,
-                                   name=self._iron_column)
-            update_coverage_age_start = pd.Series((update_folic_acid=='covered').map({True: 0.0, False: pd.NaT}),
-                                   index=pop_data.index,
-                                   name=self._iron_coverage_age)
+                                    index=pop_data.index,
+                                    name=self._iron_fortified_column)
+            update_iron_coverage_age_start = pd.Series((update_iron=='covered').map({True: 0.0, False: np.nan}),
+                                                       index=pop_data.index,
+                                                       name=self._iron_coverage_age)
 
         pop_update = pd.DataFrame({
             self._fa_column: update_folic_acid,
-            self._iron_column: update_iron,
-            self._iron_coverage_age: update_coverage_age_start
+            self._iron_fortified_column: update_iron,
+            self._iron_coverage_age: update_iron_coverage_age_start
         }, pop_data.index)
         self.population_view.update(pop_update)
 
 
     def on_time_step(self, event: 'Event'):
+        """Update coverage start age for all newly covered individuals."""
+        pop = self.population_view.get(event.index, query='tracked == True and alive=="alive"')
+        is_covered = self.is_covered(pop[self._iron_fort_propensity])
+        not_previously_covered = pop[self._iron_coverage_age].isna()
+        newly_covered = is_covered & not_previously_covered
+        pop.loc[newly_covered, self._iron_coverage_age] = 0.0
+        self.population_view.update(pop)
 
-
+    def is_covered(self, propensity: pd.Series) -> pd.Series:
+        """Helper method for finding covered people from their propensity."""
+        coverage = self.iron_coverage_level(propensity.index)
+        # noinspection PyTypeChecker
+        return propensity < coverage
 
     @staticmethod
     def load_coverage_data_folic_acid(builder: 'Builder') -> float:
