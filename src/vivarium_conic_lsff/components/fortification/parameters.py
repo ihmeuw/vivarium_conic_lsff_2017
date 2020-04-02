@@ -327,4 +327,4 @@ def sample_iron_fortification_relative_risk(location: str, draw: int) -> float:
 
 def sample_iron_fortification_birthweight_shift(location: str, draw: int) -> float:
     seed = get_hash(f'iron_fortification_birthweight_shift_draw_{draw}_location_{location}')
-    return sample_lognormal_distribution(seed, IRON_FORTIFICATION_BW_SHIFT)
+    return sample_normal_distribution(seed, IRON_FORTIFICATION_BW_SHIFT)
