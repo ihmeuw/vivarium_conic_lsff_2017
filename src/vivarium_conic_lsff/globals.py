@@ -22,6 +22,13 @@ LOCATIONS = [
     'Ethiopia',
 ]
 
+class __SimLocations(NamedTuple):
+    ETHIOPIA: str = 'Ethiopia'
+    INDIA: str = 'India'
+    NIGERIA: str = 'Nigeria'
+
+SIM_LOCATIONS = __SimLocations()
+
 
 #############
 # Data Keys #

@@ -1,7 +1,7 @@
 from vivarium.framework.randomness import get_hash
 
 from vivarium_conic_lsff.utilities import (BetaParams, sample_beta_distribution,
-                                           LogNormParams, sample_lognormal_distribution)
+                                           LogNormParams, sample_lognormal_distribution, sample_normal_distribution)
 
 
 FOLIC_ACID_COVERAGE = {
@@ -308,6 +308,11 @@ IRON_FORTIFICATION_RELATIVE_RISK = LogNormParams.from_statistics(
     upper_bound=2.04
 )
 
+IRON_FORTIFICATION_BW_SHIFT = LogNormParams.from_statistics(
+    median=15.1,
+    upper_bound=24.2
+)
+
 
 def sample_iron_fortification_coverage(location: str, draw: int, coverage_time: str) -> float:
     seed = get_hash(f'iron_fortification_coverage_draw_{draw}_location_{location}')
@@ -318,3 +323,8 @@ def sample_iron_fortification_coverage(location: str, draw: int, coverage_time: 
 def sample_iron_fortification_relative_risk(location: str, draw: int) -> float:
     seed = get_hash(f'iron_fortification_relative_risk_draw_{draw}_location_{location}')
     return sample_lognormal_distribution(seed, IRON_FORTIFICATION_RELATIVE_RISK)
+
+
+def sample_iron_fortification_birthweight_shift(location: str, draw: int) -> float:
+    seed = get_hash(f'iron_fortification_birthweight_shift_draw_{draw}_location_{location}')
+    return sample_lognormal_distribution(seed, IRON_FORTIFICATION_BW_SHIFT)

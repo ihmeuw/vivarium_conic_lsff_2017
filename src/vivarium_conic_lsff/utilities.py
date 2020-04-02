@@ -146,6 +146,30 @@ def sample_lognormal_distribution(seed: int, params: LogNormParams):
     return scipy.stats.lognorm.rvs(s=params.sigma, scale=params.scale)
 
 
+class NormParams:
+
+    def __init__(self, loc, scale):
+        self.loc = loc
+        self.scale = scale
+
+    @classmethod
+    def from_statistics(cls, mean, upper_bound):
+        # 0.975-quantile of standard normal distribution (=1.96, approximately)
+        q_975_stdnorm = scipy.stats.norm().ppf(0.975)
+        std = (upper_bound - mean) / q_975_stdnorm  # std dev of normal distribution
+        return cls(mean, std)
+
+
+def sample_normal_distribution(seed: int, params: NormParams):
+    # Handle degenerate distribution
+    if params.scale == 0:
+        # TODO: correct?
+        return params.loc
+
+    np.random.seed(seed)
+    return scipy.stats.norm.rvs(loc=params.loc, scale=params.scale)
+
+
 def confidence_interval_variance(upper, lower):
     ninety_five_percent_spread = (upper - lower) / 2
     std_dev = ninety_five_percent_spread / (2 * 1.96)
