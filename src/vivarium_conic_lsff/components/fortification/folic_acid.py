@@ -5,10 +5,9 @@ import numpy as np
 import scipy.stats
 
 from vivarium.framework.randomness import get_hash
-from vivarium_conic_lsff.components.fortification.parameters import (sample_folic_acid_coverage,
-                                                                     sample_folic_acid_relative_risk,
-                                                                     sample_iron_fortification_coverage)
+
 from vivarium_conic_lsff import globals as project_globals
+from vivarium_conic_lsff.components.fortification import parameters as params
 
 if typing.TYPE_CHECKING:
     from vivarium.framework.engine import Builder
@@ -99,7 +98,9 @@ class FolicAcidAndIronFortificationCoverage:
         pop_update[self._fa_column] = update_maternal_folic_acid
         pop_update[self._iron_fortified_column] =  update_maternal_iron
         pop_update[self._iron_coverage_start_time] = update_iron_coverage_start_time
-        pop_update[self._iron_fort_food_consumption] = self.flour_consumption.ppf(draw)
+
+        draw_flour_consumption = self.randomness.get_draw(pop_data.index, additional_key='iron_consumption')
+        pop_update[self._iron_fort_food_consumption] = self.flour_consumption.ppf(draw_flour_consumption)
 
         self.population_view.update(pop_update)
 
@@ -123,13 +124,13 @@ class FolicAcidAndIronFortificationCoverage:
     def load_coverage_data_folic_acid(builder: 'Builder') -> float:
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
-        return sample_folic_acid_coverage(location, draw, 'baseline')
+        return params.sample_folic_acid_coverage(location, draw, 'baseline')
 
     @staticmethod
     def load_coverage_data_iron(builder: 'Builder') -> float:
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
-        return sample_iron_fortification_coverage(location, draw, 'baseline')
+        return params.sample_iron_fortification_coverage(location, draw, 'baseline')
 
 
 class FolicAcidFortificationEffect:
@@ -161,14 +162,14 @@ class FolicAcidFortificationEffect:
     def load_relative_risk_data(builder: 'Builder') -> float:
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
-        return sample_folic_acid_relative_risk(location, draw)
+        return params.sample_folic_acid_relative_risk(location, draw)
 
     @staticmethod
     def load_population_attributable_fraction_data(builder: 'Builder'):
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
-        rr = sample_folic_acid_relative_risk(location, draw)
-        coverage = sample_folic_acid_coverage(location, draw, 'baseline')
+        rr = params.sample_folic_acid_relative_risk(location, draw)
+        coverage = params.sample_folic_acid_coverage(location, draw, 'baseline')
         exposure = 1 - coverage
         mean_rr = rr*exposure + 1*(1-exposure)
         paf = (mean_rr - 1)/mean_rr
@@ -203,14 +204,14 @@ class MaternalIronFortificationEffect:
     def compute_shift(self, amount_fortified_food: pd.Series) -> pd.Series:
         location, draw, amount_compound_iron, iron_effect = self.treatment_effects
 
-        elemental_iron = amount_compound_iron * project_globals.IF_ELEMENTAL_IRON_RATIO
-        iron_per_day = (amount_fortified_food / 1000) * elemental_iron
+        elemental_iron = amount_compound_iron * params.IF_ELEMENTAL_IRON_RATIO
+        iron_per_day = params.gram_to_kg(amount_fortified_food) * elemental_iron
 
         seed = get_hash(f'iron_fortification_coverage_draw_{draw}_location_{location}')
         np.random.seed(seed)
         propensity = np.random.random(len(amount_fortified_food))
-        shifts = iron_per_day * (iron_effect.ppf(propensity) / 10)
-
+        iron_effectiveness = (iron_effect.ppf(propensity) / 10)
+        shifts = iron_per_day * iron_effectiveness
         return shifts
 
 
@@ -228,15 +229,10 @@ class MaternalIronFortificationEffect:
         ]
 
 
-def get_iron_content_for_location(loc: project_globals.SIM_LOCATIONS):
-    '''Units are mg/kg of iron compound such as NaFeEDTA (sodium ferric ethylenediaminetetraacetate)
-       as opposed to elemental iron.'''
-    values_per_location = {
-        project_globals.SIM_LOCATIONS.ETHIOPIA: (30,),
-        project_globals.SIM_LOCATIONS.INDIA: (14, 21.5),
-        project_globals.SIM_LOCATIONS.NIGERIA: (40,)
-    }
-    compound_iron = values_per_location[loc]
+def get_iron_content_for_location(loc: params.SIM_LOCATIONS):
+    """Units are mg/kg of iron compound such as NaFeEDTA (sodium ferric ethylenediaminetetraacetate)
+       as opposed to elemental iron. Sample if 2 values, else point estimate"""
+    compound_iron = params.IRON_VALUES_PER_LOCATION[loc]
     if len(compound_iron) > 1:
         return np.random.uniform(compound_iron[0], compound_iron[1])
     else:
@@ -244,37 +240,38 @@ def get_iron_content_for_location(loc: project_globals.SIM_LOCATIONS):
 
 
 def get_iron_effect_distribution():
-    '''Return normal distribution of birthweight shifts resulting from iron fortification'''
+    """Return normal distribution of birthweight shifts resulting from iron fortification"""
     # 0.975-quantile of standard normal distribution (=1.96, approximately)
     q_975_stdnorm = scipy.stats.norm().ppf(0.975)
-    std = (project_globals.IF_Q975_BW_SHIFT - project_globals.IF_MEAN_BW_SHIFT) / q_975_stdnorm
-    return scipy.stats.norm(project_globals.IF_MEAN_BW_SHIFT, std)
+    std = (params.IF_Q975_BW_SHIFT - params.IF_MEAN_BW_SHIFT) / q_975_stdnorm
+    return scipy.stats.norm(params.IF_MEAN_BW_SHIFT, std)
 
 
 class FlourConsumptionDistribution():
-    q0 = 0
-    q1 = 77.5
-    q2 = 100
-    q3 = 200
-    q4 = 350.5
 
     def ppf(self, propensity: pd.Series) -> pd.Series:
         flour_consumption = pd.Series(0.0, index=propensity.index)
         first_quartile = propensity < 0.25
         first_quartile_p = propensity.loc[first_quartile]
-        flour_consumption.loc[first_quartile] = (first_quartile_p / 0.25 ) * self.q1
+        flour_consumption.loc[first_quartile] = (first_quartile_p / 0.25 ) * params.FLOUR_QUANTILES.Q1
 
         second_quartile = ((0.25 <= propensity) & (propensity < 0.50))
         second_quartile_p = propensity.loc[second_quartile]
-        flour_consumption.loc[second_quartile] = ((second_quartile_p - 0.25) / 0.25) * (self.q2 - self.q1) + self.q1
+        flour_consumption.loc[second_quartile] = (((second_quartile_p - 0.25) / 0.25)
+                                                  * (params.FLOUR_QUANTILES.Q2 - params.FLOUR_QUANTILES.Q1)
+                                                  + params.FLOUR_QUANTILES.Q1)
 
         third_quartile = ((0.50 <= propensity) & (propensity < 0.75))
         third_quartile_p = propensity.loc[third_quartile]
-        flour_consumption.loc[third_quartile] = ((third_quartile_p - 0.50) / 0.50) * (self.q3 - self.q2) + self.q2
+        flour_consumption.loc[third_quartile] = (((third_quartile_p - 0.50) / 0.25)
+                                                 * (params.FLOUR_QUANTILES.Q3 - params.FLOUR_QUANTILES.Q2)
+                                                 + params.FLOUR_QUANTILES.Q2)
 
         fourth_quartile = (0.75 <= propensity)
         fourth_quartile_p = propensity.loc[fourth_quartile]
-        flour_consumption.loc[fourth_quartile] = ((fourth_quartile_p - 0.75) / 0.75) * (self.q4 - self.q3) + self.q3
+        flour_consumption.loc[fourth_quartile] = (((fourth_quartile_p - 0.75) / 0.25)
+                                                  * (params.FLOUR_QUANTILES.Q4 - params.FLOUR_QUANTILES.Q3)
+                                                  + params.FLOUR_QUANTILES.Q3)
 
         return flour_consumption
 

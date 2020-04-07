@@ -1,9 +1,19 @@
+import pandas as pd
+
+from typing import NamedTuple
+
 from vivarium.framework.randomness import get_hash
 
 from vivarium_conic_lsff.utilities import (BetaParams, sample_beta_distribution,
                                            LogNormParams, sample_lognormal_distribution,
                                            )
 
+class __SimLocations(NamedTuple):
+    ETHIOPIA: str = 'Ethiopia'
+    INDIA: str = 'India'
+    NIGERIA: str = 'Nigeria'
+
+SIM_LOCATIONS = __SimLocations()
 
 FOLIC_ACID_COVERAGE = {
     'Ethiopia': [
@@ -304,10 +314,35 @@ IRON_FORTIFICATION_COVERAGE = {
     ]
 }
 
+
+IF_MEAN_BW_SHIFT = 15.1
+IF_Q975_BW_SHIFT = 24.2
+IF_ELEMENTAL_IRON_RATIO = 55.845 / 367.047
+
+IRON_VALUES_PER_LOCATION = {
+    SIM_LOCATIONS.ETHIOPIA: (30,),
+    SIM_LOCATIONS.INDIA: (14, 21.5),
+    SIM_LOCATIONS.NIGERIA: (40,)
+}
+
+class __FlourQuantiles(NamedTuple):
+    Q0: float = 0
+    Q1: float = 77.5
+    Q2: float = 100
+    Q3: float = 200
+    Q4: float = 350.5
+
+FLOUR_QUANTILES = __FlourQuantiles()
+
+
 IRON_FORTIFICATION_RELATIVE_RISK = LogNormParams.from_statistics(
     median=1.71,
     upper_bound=2.04
 )
+
+
+def gram_to_kg(gram_amount: pd.Series) ->  pd.Series:
+    return gram_amount/1_000
 
 
 def sample_iron_fortification_coverage(location: str, draw: int, coverage_time: str) -> float:

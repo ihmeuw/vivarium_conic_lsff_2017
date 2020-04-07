@@ -22,13 +22,6 @@ LOCATIONS = [
     'Ethiopia',
 ]
 
-class __SimLocations(NamedTuple):
-    ETHIOPIA: str = 'Ethiopia'
-    INDIA: str = 'India'
-    NIGERIA: str = 'Nigeria'
-
-SIM_LOCATIONS = __SimLocations()
-
 
 #############
 # Data Keys #
@@ -556,10 +549,6 @@ IRON_FORTIFICATION_COVERAGE_COLUMN = 'mother_ate_iron_fortified_food'
 IRON_COVERAGE_START_TIME_COLUMN = 'iron_coverage_start_time'
 IRON_FORTIFICATION_PROPENSITY_COLUMN = 'iron_fortification_propensity'
 IRON_FORTIFICATION_FOOD_CONSUMPTION = 'iron_fortified_food_consumed'
-
-IF_MEAN_BW_SHIFT = 15.1
-IF_Q975_BW_SHIFT = 24.2
-IF_ELEMENTAL_IRON_RATIO = 55.845 / 367.047
 
 
 #################################
