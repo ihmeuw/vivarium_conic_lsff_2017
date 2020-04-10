@@ -8,12 +8,7 @@ from vivarium_conic_lsff.utilities import (BetaParams, sample_beta_distribution,
                                            LogNormParams, sample_lognormal_distribution,
                                            )
 
-class __SimLocations(NamedTuple):
-    ETHIOPIA: str = 'Ethiopia'
-    INDIA: str = 'India'
-    NIGERIA: str = 'Nigeria'
-
-SIM_LOCATIONS = __SimLocations()
+from vivarium_conic_lsff import globals as project_globals
 
 FOLIC_ACID_COVERAGE = {
     'Ethiopia': [
@@ -317,12 +312,11 @@ IRON_FORTIFICATION_COVERAGE = {
 
 IF_MEAN_BW_SHIFT = 15.1
 IF_Q975_BW_SHIFT = 24.2
-IF_ELEMENTAL_IRON_RATIO = 55.845 / 367.047
 
 IRON_VALUES_PER_LOCATION = {
-    SIM_LOCATIONS.ETHIOPIA: (30,),
-    SIM_LOCATIONS.INDIA: (14, 21.5),
-    SIM_LOCATIONS.NIGERIA: (40,)
+    project_globals.LOCATIONS.ETHIOPIA: (30,),
+    project_globals.LOCATIONS.INDIA: (14, 21.5),
+    project_globals.LOCATIONS.NIGERIA: (40,)
 }
 
 class __FlourQuantiles(NamedTuple):

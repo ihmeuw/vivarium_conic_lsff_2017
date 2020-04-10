@@ -34,12 +34,12 @@ def build_model_specifications(template: str, location: str, output_dir: str):
     output_dir = Path(output_dir)
 
     if location == 'all' and len(project_globals.LOCATIONS):
-        locations = project_globals.LOCATIONS
+        locations = list(project_globals.LOCATIONS)
     elif location in project_globals.LOCATIONS:
         locations = [location]
     else:
         raise ValueError(f'Make sure you have populated the LOCATIONS list in globals.py.\n'
-                         f'Location must be the string "all" or one of {project_globals.LOCATIONS}\n'
+                         f'Location must be the string "all" or one of {list(project_globals.LOCATIONS)}\n'
                          f'You specified "{location}".\n')
 
     logger.debug(f'Reading model spec template from {str(template)}.')

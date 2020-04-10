@@ -42,7 +42,7 @@ class FolicAcidAndIronFortificationCoverage:
             source=iron_coverage
         )
 
-        self.flour_consumption = FlourConsumptionDistribution()
+        self.iron_consumption = IronAmountDistribution(builder.configuration.input_data.location)
 
         # common randomness source
         self._common_key = project_globals.IRON_FOLIC_ACID_RANDOMNESS
@@ -99,8 +99,8 @@ class FolicAcidAndIronFortificationCoverage:
         pop_update[self._iron_fortified_column] =  update_maternal_iron
         pop_update[self._iron_coverage_start_time] = update_iron_coverage_start_time
 
-        draw_flour_consumption = self.randomness.get_draw(pop_data.index, additional_key='iron_consumption')
-        pop_update[self._iron_fort_food_consumption] = self.flour_consumption.ppf(draw_flour_consumption)
+        draw_iron_consumption = self.randomness.get_draw(pop_data.index, additional_key='iron_consumption')
+        pop_update[self._iron_fort_food_consumption] = self.iron_consumption.ppf(draw_iron_consumption)
 
         self.population_view.update(pop_update)
 
@@ -189,65 +189,39 @@ class MaternalIronFortificationEffect:
                                               self.adjust_birth_weights)
 
         self._fortified = project_globals.IRON_FORTIFICATION_COVERAGE_COLUMN
-        self._amount_fortified_food = project_globals.IRON_FORTIFICATION_FOOD_CONSUMPTION
-        self.population_view = builder.population.get_view([self._fortified, self._amount_fortified_food])
+        self._iron_consumed = project_globals.IRON_FORTIFICATION_FOOD_CONSUMPTION
+        self.population_view = builder.population.get_view([self._fortified, self._iron_consumed])
 
     def adjust_birth_weights(self, index, birth_weights):
+        # TODO - doesn't correctly handle existing coverage
         fortified_status = self.population_view.get(index)[self._fortified]
         idx_fortified = fortified_status.loc[fortified_status=='covered'].index
         if len(idx_fortified):
-            amount_fortified_food = self.population_view.get(index)[self._amount_fortified_food]
-            bw_shift = self.compute_shift(amount_fortified_food.loc[idx_fortified])
+            elemental_iron = self.population_view.get(index)[self._iron_consumed]
+            bw_shift = elemental_iron * self.treatment_effects.rvs(len(elemental_iron)) / 10
             birth_weights.loc[idx_fortified, 'birth_weight'] += bw_shift
         return birth_weights
-
-    def compute_shift(self, amount_fortified_food: pd.Series) -> pd.Series:
-        location, draw, amount_compound_iron, iron_effect = self.treatment_effects
-
-        elemental_iron = amount_compound_iron * params.IF_ELEMENTAL_IRON_RATIO
-        iron_per_day = params.gram_to_kg(amount_fortified_food) * elemental_iron
-
-        seed = get_hash(f'iron_fortification_coverage_draw_{draw}_location_{location}')
-        np.random.seed(seed)
-        propensity = np.random.random(len(amount_fortified_food))
-        iron_effectiveness = (iron_effect.ppf(propensity) / 10)
-        shifts = iron_per_day * iron_effectiveness
-        return shifts
-
 
     @staticmethod
     def load_treatment_effects(builder: 'Builder'):
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
-        amount_compound_iron = get_iron_content_for_location(location)
-        iron_effect = get_iron_effect_distribution()
-        return [
-            location,
-            draw,
-            amount_compound_iron,
-            iron_effect
-        ]
+        iron_effect = get_iron_effect_distribution(draw, location)
+        return iron_effect
 
-
-def get_iron_content_for_location(loc: params.SIM_LOCATIONS):
-    """Units are mg/kg of iron compound such as NaFeEDTA (sodium ferric ethylenediaminetetraacetate)
-       as opposed to elemental iron. Sample if 2 values, else point estimate"""
-    compound_iron = params.IRON_VALUES_PER_LOCATION[loc]
-    if len(compound_iron) > 1:
-        return np.random.uniform(compound_iron[0], compound_iron[1])
-    else:
-        return compound_iron[0]
-
-
-def get_iron_effect_distribution():
+def get_iron_effect_distribution(draw, location):
     """Return normal distribution of birthweight shifts resulting from iron fortification"""
-    # 0.975-quantile of standard normal distribution (=1.96, approximately)
     q_975_stdnorm = scipy.stats.norm().ppf(0.975)
     std = (params.IF_Q975_BW_SHIFT - params.IF_MEAN_BW_SHIFT) / q_975_stdnorm
+    seed = get_hash(f'iron_fortification_bw_shift_draw_{draw}_location_{location}')
+    np.random.seed(seed)
     return scipy.stats.norm(params.IF_MEAN_BW_SHIFT, std)
 
 
-class FlourConsumptionDistribution():
+class IronAmountDistribution():
+
+    def __init__(self, location: str):
+        self._location = location
 
     def ppf(self, propensity: pd.Series) -> pd.Series:
         flour_consumption = pd.Series(0.0, index=propensity.index)
@@ -273,5 +247,16 @@ class FlourConsumptionDistribution():
                                                   * (params.FLOUR_QUANTILES.Q4 - params.FLOUR_QUANTILES.Q3)
                                                   + params.FLOUR_QUANTILES.Q3)
 
-        return flour_consumption
+        iron_content = self.get_iron_content_for_location(propensity)
+        iron_per_simulant = iron_content * params.gram_to_kg(flour_consumption)
 
+        return iron_per_simulant
+
+    def get_iron_content_for_location(self, propensity: pd.Series) -> typing.Union[int, pd.Series]:
+        """Sample if 2 values, else point estimate"""
+        compound_iron = params.IRON_VALUES_PER_LOCATION[self._location]
+        if len(compound_iron) > 1:
+            dist = scipy.stats.uniform(compound_iron[0], compound_iron[1] - compound_iron[0])
+            return dist.ppf(propensity)
+        else:
+            return compound_iron[0]

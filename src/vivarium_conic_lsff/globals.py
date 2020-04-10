@@ -16,11 +16,13 @@ MAKE_ARTIFACT_CPU = '1'
 MAKE_ARTIFACT_RUNTIME = '3:00:00'
 MAKE_ARTIFACT_SLEEP = 10
 
-LOCATIONS = [
-    'India',
-    'Nigeria',
-    'Ethiopia',
-]
+
+class __Locations(NamedTuple):
+    ETHIOPIA: str = 'Ethiopia'
+    INDIA: str = 'India'
+    NIGERIA: str = 'Nigeria'
+
+LOCATIONS = __Locations()
 
 
 #############
