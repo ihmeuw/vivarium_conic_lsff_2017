@@ -314,9 +314,10 @@ IF_MEAN_BW_SHIFT = 15.1
 IF_Q975_BW_SHIFT = 24.2
 
 IRON_VALUES_PER_LOCATION = {
-    project_globals.LOCATIONS.ETHIOPIA: (30,),
-    project_globals.LOCATIONS.INDIA: (14, 21.5),
-    project_globals.LOCATIONS.NIGERIA: (40,)
+    # grams per kilogram
+    project_globals.LOCATIONS.ETHIOPIA: (0.030, 0.030),
+    project_globals.LOCATIONS.INDIA: (0.014, 0.0215),
+    project_globals.LOCATIONS.NIGERIA: (0.040, 0.040)
 }
 
 class __FlourQuantiles(NamedTuple):
