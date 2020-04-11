@@ -153,10 +153,6 @@ class FolicAcidAndIronFortificationCoverage:
         else:
             return scipy.stats.uniform(iron_lower, iron_upper).rvs()
 
-    @staticmethod
-    def load_iron_amount_data(builder: 'Builder'):
-        return IronAmountDistribution()
-
 
 class FolicAcidFortificationEffect:
 
