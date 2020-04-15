@@ -2,11 +2,12 @@ import typing
 
 import pandas as pd
 import numpy as np
+import scipy.stats
 
-from vivarium_conic_lsff.components.fortification.parameters import (sample_folic_acid_coverage,
-                                                                     sample_folic_acid_relative_risk,
-                                                                     sample_iron_fortification_coverage)
+from vivarium.framework.randomness import get_hash
+
 from vivarium_conic_lsff import globals as project_globals
+from vivarium_conic_lsff.components.fortification import parameters as params
 
 if typing.TYPE_CHECKING:
     from vivarium.framework.engine import Builder
@@ -41,6 +42,11 @@ class FolicAcidAndIronFortificationCoverage:
             source=iron_coverage
         )
 
+        iron_content_ratio = self.load_iron_content_ratio(builder)
+        self.iron_amount_distribution = IronAmountDistribution(params.FLOUR_QUANTILES, iron_content_ratio)
+        self.iron_amount = builder.value.register_value_producer(
+            'iron_fortification.iron_amount', source=self.get_iron_amount)
+
         # common randomness source
         self._common_key = project_globals.IRON_FOLIC_ACID_RANDOMNESS
         self.randomness = builder.randomness.get_stream(self._common_key)
@@ -50,8 +56,10 @@ class FolicAcidAndIronFortificationCoverage:
         self._iron_fortified_column = project_globals.IRON_FORTIFICATION_COVERAGE_COLUMN
         self._iron_coverage_start_time = project_globals.IRON_COVERAGE_START_TIME_COLUMN
         self._iron_fort_propensity = project_globals.IRON_FORTIFICATION_PROPENSITY_COLUMN
+        self._iron_fort_food_consumption = project_globals.IRON_FORTIFICATION_FOOD_CONSUMPTION
         created_columns = [self._fa_column, self._iron_fortified_column,
-                           self._iron_coverage_start_time, self._iron_fort_propensity]
+                           self._iron_coverage_start_time, self._iron_fort_propensity,
+                           self._iron_fort_food_consumption]
 
         self.population_view = builder.population.get_view(created_columns)
 
@@ -65,35 +73,38 @@ class FolicAcidAndIronFortificationCoverage:
 
     def on_initialize_simulants(self, pop_data: 'SimulantData'):
         pop_update = pd.DataFrame()
+        draw = self.randomness.get_draw(pop_data.index)
+
         if pop_data.user_data['sim_state'] == 'setup':  # Initial population
             update_maternal_folic_acid = pd.Series('unknown', index=pop_data.index, name=self._fa_column)
             update_maternal_iron = pd.Series('unknown', index=pop_data.index, name=self._iron_fortified_column)
 
-            propensity = self.randomness.get_draw(pop_data.index)
-            is_covered_individual = self.is_covered(propensity)
-            update_iron_coverage_start_time = pd.Series((is_covered_individual).map({True: pop_data.creation_time, False: np.nan}),
+            iron_covered = self.is_iron_covered(draw)
+            update_iron_coverage_start_time = pd.Series((iron_covered).map({True: pop_data.creation_time, False: np.nan}),
                                                         index=pop_data.index,
                                                         name=self._iron_coverage_start_time)
-            pop_update[self._iron_fort_propensity] = propensity
+            update_iron_amount = self.iron_amount(pop_data.index, iron_covered)
+            pop_update[self._iron_fort_propensity] = draw
         else:  # New sims
-            draw = self.randomness.get_draw(pop_data.index)
-
             effective_coverage_fa = self.fa_effective_coverage_level(pop_data.index)
             update_maternal_folic_acid = pd.Series((draw < effective_coverage_fa).map({True: 'covered', False: 'uncovered'}),
                                           index=pop_data.index,
                                           name=self._fa_column)
 
             effective_coverage_iron = self.iron_effective_coverage_level(pop_data.index)
-            update_maternal_iron = pd.Series((draw < effective_coverage_iron).map({True: 'covered', False: 'uncovered'}),
+            iron_covered = draw < effective_coverage_iron
+            update_maternal_iron = pd.Series((iron_covered).map({True: 'covered', False: 'uncovered'}),
                                     index=pop_data.index,
                                     name=self._iron_fortified_column)
             update_iron_coverage_start_time = pd.Series((update_maternal_iron=='covered').map({True: pop_data.creation_time, False: np.nan}),
                                                         index=pop_data.index,
                                                         name=self._iron_coverage_start_time)
+            update_iron_amount = self.iron_amount(pop_data.index, iron_covered)
 
         pop_update[self._fa_column] = update_maternal_folic_acid
         pop_update[self._iron_fortified_column] =  update_maternal_iron
         pop_update[self._iron_coverage_start_time] = update_iron_coverage_start_time
+        pop_update[self._iron_fort_food_consumption] = update_iron_amount
 
         self.population_view.update(pop_update)
 
@@ -101,29 +112,46 @@ class FolicAcidAndIronFortificationCoverage:
     def on_time_step(self, event: 'Event'):
         """Update coverage start age for all newly covered individuals."""
         pop = self.population_view.get(event.index, query='tracked == True and alive=="alive"')
-        is_covered = self.is_covered(pop[self._iron_fort_propensity])
+        is_covered = self.is_iron_covered(pop[self._iron_fort_propensity])
         not_previously_covered = pop[self._iron_coverage_start_time].isna()
         newly_covered = is_covered & not_previously_covered
         pop.loc[newly_covered, self._iron_coverage_start_time] = event.time
         self.population_view.update(pop)
 
-    def is_covered(self, propensity: pd.Series) -> pd.Series:
+    def is_iron_covered(self, propensity: pd.Series) -> pd.Series:
         """Helper method for finding covered people from their propensity."""
         coverage = self.iron_coverage_level(propensity.index)
         # noinspection PyTypeChecker
         return propensity < coverage
 
+    def get_iron_amount(self, index, iron_covered):
+        iron_amounts = pd.Series(0.0, index=index)
+        draw_iron_consumption = self.randomness.get_draw(index, additional_key='iron_consumption')
+        iron_amounts[iron_covered] = self.iron_amount_distribution.ppf(draw_iron_consumption)
+        return iron_amounts
+
     @staticmethod
     def load_coverage_data_folic_acid(builder: 'Builder') -> float:
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
-        return sample_folic_acid_coverage(location, draw, 'baseline')
+        return params.sample_folic_acid_coverage(location, draw, 'baseline')
 
     @staticmethod
     def load_coverage_data_iron(builder: 'Builder') -> float:
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
-        return sample_iron_fortification_coverage(location, draw, 'baseline')
+        return params.sample_iron_fortification_coverage(location, draw, 'baseline')
+
+    @staticmethod
+    def load_iron_content_ratio(builder: 'Builder') -> float:
+        location = builder.configuration.input_data.location
+        draw = builder.configuration.input_data.input_draw_number
+        seed = get_hash(f'iron_fortification_amount_draw_{draw}_location_{location}')
+        iron_lower, iron_upper = params.IRON_VALUES_PER_LOCATION[location]
+        if iron_lower == iron_upper:
+            return iron_upper
+        else:
+            return scipy.stats.uniform(iron_lower, iron_upper).rvs()
 
 
 class FolicAcidFortificationEffect:
@@ -155,15 +183,47 @@ class FolicAcidFortificationEffect:
     def load_relative_risk_data(builder: 'Builder') -> float:
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
-        return sample_folic_acid_relative_risk(location, draw)
+        return params.sample_folic_acid_relative_risk(location, draw)
 
     @staticmethod
     def load_population_attributable_fraction_data(builder: 'Builder'):
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
-        rr = sample_folic_acid_relative_risk(location, draw)
-        coverage = sample_folic_acid_coverage(location, draw, 'baseline')
+        rr = params.sample_folic_acid_relative_risk(location, draw)
+        coverage = params.sample_folic_acid_coverage(location, draw, 'baseline')
         exposure = 1 - coverage
         mean_rr = rr*exposure + 1*(1-exposure)
         paf = (mean_rr - 1)/mean_rr
         return paf
+
+
+class IronAmountDistribution():
+    def __init__(self, flour_quantiles, iron_ratio: float):
+        self._flour_quantiles = flour_quantiles
+        self._iron_ratio = iron_ratio
+
+    def ppf(self, propensity: pd.Series) -> pd.Series:
+        flour_consumption = pd.Series(0.0, index=propensity.index)
+        first_quartile = propensity < 0.25
+        first_quartile_p = propensity.loc[first_quartile]
+        flour_consumption.loc[first_quartile] = (first_quartile_p / 0.25 ) * self._flour_quantiles.Q1
+
+        second_quartile = ((0.25 <= propensity) & (propensity < 0.50))
+        second_quartile_p = propensity.loc[second_quartile]
+        flour_consumption.loc[second_quartile] = (((second_quartile_p - 0.25) / 0.25)
+                                                  * (self._flour_quantiles.Q2 - self._flour_quantiles.Q1)
+                                                  + self._flour_quantiles.Q1)
+
+        third_quartile = ((0.50 <= propensity) & (propensity < 0.75))
+        third_quartile_p = propensity.loc[third_quartile]
+        flour_consumption.loc[third_quartile] = (((third_quartile_p - 0.50) / 0.25)
+                                                 * (self._flour_quantiles.Q3 - self._flour_quantiles.Q2)
+                                                 + self._flour_quantiles.Q2)
+
+        fourth_quartile = (0.75 <= propensity)
+        fourth_quartile_p = propensity.loc[fourth_quartile]
+        flour_consumption.loc[fourth_quartile] = (((fourth_quartile_p - 0.75) / 0.25)
+                                                  * (self._flour_quantiles.Q4 - self._flour_quantiles.Q3)
+                                                  + self._flour_quantiles.Q3)
+
+        return flour_consumption * self._iron_ratio

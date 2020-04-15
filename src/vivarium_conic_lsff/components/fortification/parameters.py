@@ -1,8 +1,14 @@
+import pandas as pd
+
+from typing import NamedTuple
+
 from vivarium.framework.randomness import get_hash
 
 from vivarium_conic_lsff.utilities import (BetaParams, sample_beta_distribution,
-                                           LogNormParams, sample_lognormal_distribution)
+                                           LogNormParams, sample_lognormal_distribution,
+                                           )
 
+from vivarium_conic_lsff import globals as project_globals
 
 FOLIC_ACID_COVERAGE = {
     'Ethiopia': [
@@ -303,18 +309,38 @@ IRON_FORTIFICATION_COVERAGE = {
     ]
 }
 
+
+IF_MEAN_BW_SHIFT = 15.1
+IF_Q975_BW_SHIFT = 24.2
+
+IRON_VALUES_PER_LOCATION = {
+    # grams per kilogram
+    project_globals.LOCATIONS.ETHIOPIA: (0.030, 0.030),
+    project_globals.LOCATIONS.INDIA: (0.014, 0.0215),
+    project_globals.LOCATIONS.NIGERIA: (0.040, 0.040)
+}
+
+class __FlourQuantiles(NamedTuple):
+    Q0: float = 0
+    Q1: float = 77.5
+    Q2: float = 100
+    Q3: float = 200
+    Q4: float = 350.5
+
+FLOUR_QUANTILES = __FlourQuantiles()
+
+
 IRON_FORTIFICATION_RELATIVE_RISK = LogNormParams.from_statistics(
     median=1.71,
     upper_bound=2.04
 )
 
 
+def gram_to_kg(gram_amount: pd.Series) ->  pd.Series:
+    return gram_amount/1_000
+
+
 def sample_iron_fortification_coverage(location: str, draw: int, coverage_time: str) -> float:
     seed = get_hash(f'iron_fortification_coverage_draw_{draw}_location_{location}')
     return sum([coverage_params['weight'] * sample_beta_distribution(seed, coverage_params[coverage_time])
                 for coverage_params in IRON_FORTIFICATION_COVERAGE[location]])
-
-
-def sample_iron_fortification_relative_risk(location: str, draw: int) -> float:
-    seed = get_hash(f'iron_fortification_relative_risk_draw_{draw}_location_{location}')
-    return sample_lognormal_distribution(seed, IRON_FORTIFICATION_RELATIVE_RISK)

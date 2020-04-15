@@ -16,11 +16,13 @@ MAKE_ARTIFACT_CPU = '1'
 MAKE_ARTIFACT_RUNTIME = '3:00:00'
 MAKE_ARTIFACT_SLEEP = 10
 
-LOCATIONS = [
-    'India',
-    'Nigeria',
-    'Ethiopia',
-]
+
+class __Locations(NamedTuple):
+    ETHIOPIA: str = 'Ethiopia'
+    INDIA: str = 'India'
+    NIGERIA: str = 'Nigeria'
+
+LOCATIONS = __Locations()
 
 
 #############
@@ -548,6 +550,8 @@ VITAMIN_A_FORTIFICATION_GROUPS = ['uncovered', 'covered', 'effectively_covered']
 IRON_FORTIFICATION_COVERAGE_COLUMN = 'mother_ate_iron_fortified_food'
 IRON_COVERAGE_START_TIME_COLUMN = 'iron_coverage_start_time'
 IRON_FORTIFICATION_PROPENSITY_COLUMN = 'iron_fortification_propensity'
+IRON_FORTIFICATION_FOOD_CONSUMPTION = 'iron_fortified_food_consumed'
+
 
 #################################
 # Results columns and variables #
