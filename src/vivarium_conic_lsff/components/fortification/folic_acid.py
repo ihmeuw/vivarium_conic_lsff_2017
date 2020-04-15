@@ -197,48 +197,6 @@ class FolicAcidFortificationEffect:
         return paf
 
 
-class MaternalIronFortificationEffect:
-
-    @property
-    def name(self):
-        return 'maternal_iron_fortification_effect'
-
-    def setup(self, builder: 'Builder'):
-        self.treatment_effects = self.load_treatment_effects(builder)
-
-        builder.value.register_value_modifier(f'low_birth_weight_and_short_gestation.exposure',
-                                              self.adjust_birth_weights)
-
-        self._fortified = project_globals.IRON_FORTIFICATION_COVERAGE_COLUMN
-        self._iron_consumed = project_globals.IRON_FORTIFICATION_FOOD_CONSUMPTION
-        self.population_view = builder.population.get_view([self._fortified, self._iron_consumed])
-
-    def adjust_birth_weights(self, index, birth_weights):
-        # TODO - doesn't correctly handle existing coverage
-        fortified_status = self.population_view.get(index)[self._fortified]
-        idx_fortified = fortified_status.loc[fortified_status=='covered'].index
-        if len(idx_fortified):
-            elemental_iron = self.population_view.get(index)[self._iron_consumed].loc[idx_fortified]
-            bw_shift = elemental_iron * self.treatment_effects.rvs(len(elemental_iron)) / 10
-            birth_weights.loc[idx_fortified, 'birth_weight'] += bw_shift
-        return birth_weights
-
-    @staticmethod
-    def load_treatment_effects(builder: 'Builder'):
-        location = builder.configuration.input_data.location
-        draw = builder.configuration.input_data.input_draw_number
-        iron_effect = get_iron_effect_distribution(draw, location)
-        return iron_effect
-
-def get_iron_effect_distribution(draw, location):
-    """Return normal distribution of birthweight shifts resulting from iron fortification"""
-    q_975_stdnorm = scipy.stats.norm().ppf(0.975)
-    std = (params.IF_Q975_BW_SHIFT - params.IF_MEAN_BW_SHIFT) / q_975_stdnorm
-    seed = get_hash(f'iron_fortification_bw_shift_draw_{draw}_location_{location}')
-    np.random.seed(seed)
-    return scipy.stats.norm(params.IF_MEAN_BW_SHIFT, std)
-
-
 class IronAmountDistribution():
     def __init__(self, flour_quantiles, iron_ratio: float):
         self._flour_quantiles = flour_quantiles
