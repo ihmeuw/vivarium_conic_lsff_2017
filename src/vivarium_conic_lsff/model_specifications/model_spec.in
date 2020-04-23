@@ -92,3 +92,7 @@ configuration:
             by_age: True
             by_sex: True
             by_year: True
+        vitamin_a_deficiency_observer:
+            by_age: True
+            by_sex: True
+            by_year: True
