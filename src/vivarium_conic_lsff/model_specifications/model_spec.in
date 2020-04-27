@@ -32,6 +32,7 @@ components:
         - DiseaseObserver('measles')
         - DiseaseObserver('lower_respiratory_infections')
         - DiseaseObserver('vitamin_a_deficiency')
+        - DiseaseObserver('neural_tube_defects')
         - LiveBirthWithNTDObserver()
         - LBWSGObserver()
         - DisabilityObserver()
@@ -93,6 +94,10 @@ configuration:
             by_sex: True
             by_year: True
         vitamin_a_deficiency_observer:
+            by_age: True
+            by_sex: True
+            by_year: True
+        neural_tube_defects_observer:
             by_age: True
             by_sex: True
             by_year: True
