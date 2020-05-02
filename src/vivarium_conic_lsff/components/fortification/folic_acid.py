@@ -31,8 +31,8 @@ class FolicAcidAndIronFortificationCoverage:
             'folic_acid_fortification.effective_coverage_level',
             source=fa_coverage
         )
-        
-        iron_coverage_data = self.load_coverage_data_iron(builder)
+
+        iron_coverage_data = load_coverage_data_iron(builder)
         iron_coverage = builder.lookup.build_table(iron_coverage_data)
         self.iron_coverage_level = builder.value.register_value_producer(
             'iron_fortification.coverage_level',
@@ -70,7 +70,6 @@ class FolicAcidAndIronFortificationCoverage:
                                                  requires_streams=[self._common_key])
         builder.event.register_listener('time_step', self.on_time_step)
 
-
     def on_initialize_simulants(self, pop_data: 'SimulantData'):
         pop_update = pd.DataFrame()
         draw = self.randomness.get_draw(pop_data.index)
@@ -88,26 +87,25 @@ class FolicAcidAndIronFortificationCoverage:
         else:  # New sims
             effective_coverage_fa = self.fa_effective_coverage_level(pop_data.index)
             update_maternal_folic_acid = pd.Series((draw < effective_coverage_fa).map({True: 'covered', False: 'uncovered'}),
-                                          index=pop_data.index,
-                                          name=self._fa_column)
+                                                   index=pop_data.index,
+                                                   name=self._fa_column)
 
             effective_coverage_iron = self.iron_effective_coverage_level(pop_data.index)
             iron_covered = draw < effective_coverage_iron
             update_maternal_iron = pd.Series((iron_covered).map({True: 'covered', False: 'uncovered'}),
-                                    index=pop_data.index,
-                                    name=self._iron_fortified_column)
-            update_iron_coverage_start_time = pd.Series((update_maternal_iron=='covered').map({True: pop_data.creation_time, False: np.nan}),
+                                             index=pop_data.index,
+                                             name=self._iron_fortified_column)
+            update_iron_coverage_start_time = pd.Series((update_maternal_iron == 'covered').map({True: pop_data.creation_time, False: np.nan}),
                                                         index=pop_data.index,
                                                         name=self._iron_coverage_start_time)
             update_iron_amount = self.iron_amount(pop_data.index, iron_covered)
 
         pop_update[self._fa_column] = update_maternal_folic_acid
-        pop_update[self._iron_fortified_column] =  update_maternal_iron
+        pop_update[self._iron_fortified_column] = update_maternal_iron
         pop_update[self._iron_coverage_start_time] = update_iron_coverage_start_time
         pop_update[self._iron_fort_food_consumption] = update_iron_amount
 
         self.population_view.update(pop_update)
-
 
     def on_time_step(self, event: 'Event'):
         """Update coverage start age for all newly covered individuals."""
@@ -137,21 +135,23 @@ class FolicAcidAndIronFortificationCoverage:
         return params.sample_folic_acid_coverage(location, draw, 'baseline')
 
     @staticmethod
-    def load_coverage_data_iron(builder: 'Builder') -> float:
-        location = builder.configuration.input_data.location
-        draw = builder.configuration.input_data.input_draw_number
-        return params.sample_iron_fortification_coverage(location, draw, 'baseline')
-
-    @staticmethod
     def load_iron_content_ratio(builder: 'Builder') -> float:
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
         seed = get_hash(f'iron_fortification_amount_draw_{draw}_location_{location}')
+        np.random.seed(seed)
         iron_lower, iron_upper = params.IRON_VALUES_PER_LOCATION[location]
         if iron_lower == iron_upper:
             return iron_upper
         else:
             return scipy.stats.uniform(iron_lower, iron_upper).rvs()
+
+
+def load_coverage_data_iron(builder: 'Builder') -> float:
+    """This is called from both the coverage and maternal iron fortification classes"""
+    location = builder.configuration.input_data.location
+    draw = builder.configuration.input_data.input_draw_number
+    return params.sample_iron_fortification_coverage(location, draw, 'baseline')
 
 
 class FolicAcidFortificationEffect:
@@ -192,8 +192,8 @@ class FolicAcidFortificationEffect:
         rr = params.sample_folic_acid_relative_risk(location, draw)
         coverage = params.sample_folic_acid_coverage(location, draw, 'baseline')
         exposure = 1 - coverage
-        mean_rr = rr*exposure + 1*(1-exposure)
-        paf = (mean_rr - 1)/mean_rr
+        mean_rr = rr * exposure + 1 * (1 - exposure)
+        paf = (mean_rr - 1) / mean_rr
         return paf
 
 
@@ -215,23 +215,24 @@ class MaternalIronFortificationEffect:
 
     def adjust_birth_weights(self, index, birth_weights):
         fortified_status = self.population_view.get(index)[self._fortified]
-        idx_fortified = fortified_status.loc[fortified_status=='covered'].index
-        idx_unfortified = fortified_status.loc[fortified_status=='uncovered'].index
+        idx_fortified = fortified_status.loc[fortified_status == 'covered'].index
+        effect_fortified, effect_baseline = self.treatment_effects
+        birth_weights -= effect_baseline
         if len(idx_fortified):
-            effect_fortified, effect_unfortified = self.treatment_effects
             elemental_iron = self.population_view.get(index)[self._iron_consumed].loc[idx_fortified]
             bw_shift_fortified = elemental_iron * effect_fortified / 10
             birth_weights.loc[idx_fortified, 'birth_weight'] += bw_shift_fortified
-            birth_weights.loc[idx_unfortified, 'birth_weight'] += effect_unfortified
         return birth_weights
 
     @staticmethod
     def load_treatment_effects(builder: 'Builder'):
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
+        baseline_iron_coverage = load_coverage_data_iron(builder)
         iron_effect = get_iron_effect_distribution(draw, location)
-        stub = -1.0 # TODO: shift for unfortified population
-        return (iron_effect, stub)
+        baseline_effect = iron_effect * baseline_iron_coverage
+        return (iron_effect, baseline_effect)
+
 
 def get_iron_effect_distribution(draw, location):
     """Return normal distribution of birthweight shifts resulting from iron fortification"""
@@ -251,7 +252,7 @@ class IronAmountDistribution():
         flour_consumption = pd.Series(0.0, index=propensity.index)
         first_quartile = propensity < 0.25
         first_quartile_p = propensity.loc[first_quartile]
-        flour_consumption.loc[first_quartile] = (first_quartile_p / 0.25 ) * self._flour_quantiles.Q1
+        flour_consumption.loc[first_quartile] = (first_quartile_p / 0.25) * self._flour_quantiles.Q1
 
         second_quartile = ((0.25 <= propensity) & (propensity < 0.50))
         second_quartile_p = propensity.loc[second_quartile]
