@@ -335,12 +335,20 @@ IRON_FORTIFICATION_RELATIVE_RISK = LogNormParams.from_statistics(
     upper_bound=2.04
 )
 
-
-def gram_to_kg(gram_amount: pd.Series) ->  pd.Series:
-    return gram_amount/1_000
-
+IRON_EFFECT_DENOMINATOR = 10
 
 def sample_iron_fortification_coverage(location: str, draw: int, coverage_time: str) -> float:
     seed = get_hash(f'iron_fortification_coverage_draw_{draw}_location_{location}')
     return sum([coverage_params['weight'] * sample_beta_distribution(seed, coverage_params[coverage_time])
                 for coverage_params in IRON_FORTIFICATION_COVERAGE[location]])
+
+MEAN_FLOUR_CONSUMPTION = (
+    ((FLOUR_QUANTILES.Q0 + (FLOUR_QUANTILES.Q1 - FLOUR_QUANTILES.Q0) / 2) +
+    (FLOUR_QUANTILES.Q1 + (FLOUR_QUANTILES.Q2 - FLOUR_QUANTILES.Q1) / 2) +
+    (FLOUR_QUANTILES.Q2 + (FLOUR_QUANTILES.Q3 - FLOUR_QUANTILES.Q2) / 2) +
+    (FLOUR_QUANTILES.Q3 + (FLOUR_QUANTILES.Q4 - FLOUR_QUANTILES.Q3) / 2)) / 4)
+
+
+
+
+
