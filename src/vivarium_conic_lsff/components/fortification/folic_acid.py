@@ -144,18 +144,23 @@ class FolicAcidAndIronFortificationCoverage:
     def load_iron_content_ratio(builder: 'Builder') -> float:
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
-        seed = get_hash(f'iron_fortification_amount_draw_{draw}_location_{location}')
-        np.random.seed(seed)
-        iron_lower, iron_upper = params.IRON_VALUES_PER_LOCATION[location]
-        if iron_lower == iron_upper:
-            return iron_upper
-        else:
-            return scipy.stats.uniform(iron_lower, iron_upper).rvs()
+        return iron_content_ratio(draw, location)
 
 
 def sample_iron_coverage(draw: str, location: str) -> float:
     """ Used from both the coverage and maternal fortification effect """
     return params.sample_iron_fortification_coverage(location, draw, 'baseline')
+
+
+def iron_content_ratio(draw: str, location: str) -> float:
+    """ Used from both the coverage and maternal fortification effect """
+    seed = get_hash(f'iron_fortification_amount_draw_{draw}_location_{location}')
+    np.random.seed(seed)
+    iron_lower, iron_upper = params.IRON_VALUES_PER_LOCATION[location]
+    if iron_lower == iron_upper:
+        return iron_upper
+    else:
+        return scipy.stats.uniform(iron_lower, iron_upper).rvs()
 
 
 class FolicAcidFortificationEffect:
@@ -233,8 +238,9 @@ class MaternalIronFortificationEffect:
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
         baseline_iron_coverage = sample_iron_coverage(draw, location)
+        iron_ratio = iron_content_ratio(draw, location)
         iron_effect = get_iron_bw_effect(draw, location)
-        baseline_shift = iron_effect * baseline_iron_coverage * params.MEAN_FLOUR_CONSUMPTION
+        baseline_shift = iron_effect * baseline_iron_coverage * params.MEAN_FLOUR_CONSUMPTION * iron_ratio
         return (iron_effect, baseline_shift)
 
 
