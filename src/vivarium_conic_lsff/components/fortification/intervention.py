@@ -107,26 +107,30 @@ class FolicAcidFortificationIntervention:
     # noinspection PyUnusedLocal,DuplicatedCode
     def adjust_coverage_level(self, index, coverage):
         """Adjust the true population coverage of folic acid fortification."""
-        time_since_start = max(to_years(self.clock() - self.intervention_start), 0)
-        c_start, c_end = self.coverage_start(index), self.coverage_end(index)
-        # noinspection PyTypeChecker
-        new_coverage = (c_end
-                        - (c_end - c_start)
-                        * (1 - project_globals.FOLIC_ACID_ANNUAL_PROPORTION_INCREASE)**time_since_start)
-        return new_coverage
+        time_since_intervention_start = max(to_years(self.clock() - self.intervention_start), 0)
+        if time_since_intervention_start > 0:
+            c_start, c_end = self.coverage_start(index), self.coverage_end(index)
+            # noinspection PyTypeChecker
+            new_coverage = (c_end
+                            - (c_end - c_start)
+                            * (1 - project_globals.FOLIC_ACID_ANNUAL_PROPORTION_INCREASE)**time_since_intervention_start)
+            coverage = new_coverage
+        return coverage
 
     # noinspection PyUnusedLocal
     def adjust_effective_coverage_level(self, index, coverage):
         """Adjust the effective coverage of folic acid fortification."""
-        time_since_start = max(
+        time_since_intervention_start = max(
             to_years(self.clock() - (self.intervention_start + project_globals.FOLIC_ACID_DELAY)), 0
         )
-        c_start, c_end = self.coverage_start(index), self.coverage_end(index)
-        # noinspection PyTypeChecker
-        new_coverage = (c_end
-                        - (c_end - c_start)
-                        * (1 - project_globals.FOLIC_ACID_ANNUAL_PROPORTION_INCREASE) ** time_since_start)
-        return new_coverage
+        if time_since_intervention_start > 0:
+            c_start, c_end = self.coverage_start(index), self.coverage_end(index)
+            # noinspection PyTypeChecker
+            new_coverage = (c_end
+                            - (c_end - c_start)
+                            * (1 - project_globals.FOLIC_ACID_ANNUAL_PROPORTION_INCREASE) ** time_since_intervention_start)
+            coverage = new_coverage
+        return coverage
 
     @staticmethod
     def load_coverage_data(builder: 'Builder', coverage_time: str) -> float:
@@ -165,13 +169,15 @@ class VitaminAFortificationIntervention:
     # noinspection PyUnusedLocal,DuplicatedCode
     def adjust_coverage_level(self, index, coverage):
         """Adjust the coverage level of vitamin a fortification."""
-        time_since_start = max(to_years(self.clock() - self.intervention_start), 0)
-        c_start, c_end = self.coverage_start(index), self.coverage_end(index)
-        # noinspection PyTypeChecker
-        new_coverage = (c_end
-                        - (c_end - c_start)
-                        * (1 - project_globals.VITAMIN_A_ANNUAL_PROPORTION_INCREASE)**time_since_start)
-        return new_coverage
+        time_since_intervention_start = max(to_years(self.clock() - self.intervention_start), 0)
+        if time_since_intervention_start > 0:
+            c_start, c_end = self.coverage_start(index), self.coverage_end(index)
+            # noinspection PyTypeChecker
+            new_coverage = (c_end
+                            - (c_end - c_start)
+                            * (1 - project_globals.VITAMIN_A_ANNUAL_PROPORTION_INCREASE)**time_since_intervention_start)
+            coverage = new_coverage
+        return coverage
 
     @staticmethod
     def load_coverage_data(builder: 'Builder', coverage_time: str) -> float:
