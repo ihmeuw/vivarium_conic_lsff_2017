@@ -5,4 +5,4 @@ from .fortification import (FolicAcidAndIronFortificationCoverage, FolicAcidFort
                             VitaminAFortificationCoverage, VitaminAFortificationEffect,
                             FortificationIntervention, MaternalIronFortificationEffect)
 from .observers import (DiseaseObserver, LiveBirthWithNTDObserver, LBWSGObserver,
-                        MortalityObserver, DisabilityObserver)
+                        MortalityObserver, DisabilityObserver, BirthweightObserver)
