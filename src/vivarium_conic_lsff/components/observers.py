@@ -419,7 +419,6 @@ class BirthweightObserver:
             project_globals.BIRTH_WEIGHT_OBSERVER: {
                 'by_year': True,
                 'by_sex': True,
-                'by_age': False
             }
         }
     }
@@ -430,7 +429,6 @@ class BirthweightObserver:
 
     def setup(self, builder):
         self.disease = project_globals.BIRTH_WEIGHT
-        self.config = builder.configuration['metrics'][project_globals.BIRTH_WEIGHT_OBSERVER].to_dict()
 
         columns_required = ['alive', f'{self.disease}', 'entrance_time', 'tracked',
                             'sex', project_globals.IRON_FORTIFICATION_COVERAGE_MOM_COLUMN]
