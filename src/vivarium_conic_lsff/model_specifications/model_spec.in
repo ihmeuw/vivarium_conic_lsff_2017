@@ -34,6 +34,7 @@ components:
         - DiseaseObserver('lower_respiratory_infections')
         - DiseaseObserver('vitamin_a_deficiency')
         - DiseaseObserver('neural_tube_defects')
+        - BirthweightObserver()
         - LiveBirthWithNTDObserver()
         - LBWSGObserver()
         - DisabilityObserver()

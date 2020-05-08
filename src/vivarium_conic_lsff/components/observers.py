@@ -411,6 +411,67 @@ def get_births(pop: pd.DataFrame, config: Dict[str, bool], sim_start: pd.Timesta
     return births
 
 
+class BirthweightObserver:
+    """Observes birth_weights and stratifies by sex, year, and treatment group
+    """
+    configuration_defaults = {
+        'metrics': {
+            project_globals.BIRTH_WEIGHT_OBSERVER: {
+                'by_year': True,
+                'by_sex': True,
+            }
+        }
+    }
+
+    @property
+    def name(self):
+        return project_globals.BIRTH_WEIGHT_OBSERVER
+
+    def setup(self, builder):
+        self.disease = project_globals.BIRTH_WEIGHT
+
+        columns_required = ['alive', f'{self.disease}', 'entrance_time', 'tracked',
+                            'sex', project_globals.IRON_FORTIFICATION_COVERAGE_MOM_COLUMN]
+
+        self.population_view = builder.population.get_view(columns_required)
+        builder.value.register_value_modifier('metrics', self.metrics)
+
+    def metrics(self, index, metrics):
+        pop = self.population_view.get(index)
+        birth_weights = get_birth_weights(pop)
+        metrics.update(birth_weights)
+        return metrics
+
+    def __repr__(self):
+        return project_globals.BIRTH_WEIGHT_OBSERVER
+
+
+def get_birth_weights(pop: pd.DataFrame) -> Dict[str, float]:
+    """Obtains mean birth_weight per stratification group.
+    Parameters
+    ----------
+    pop
+        The population dataframe to be counted. It must contain sufficient
+        columns for any necessary filtering (e.g. the ``age`` column if
+        filtering by age).
+    Returns
+    -------
+    birth_weights
+        birth_weight mean and standard deviation per category.
+    """
+    birth_weights = {}
+    pop['year'] = pd.DatetimeIndex(pop['entrance_time']).year
+    gb = pop.groupby(['year', 'sex', project_globals.IRON_FORTIFICATION_COVERAGE_MOM_COLUMN])
+    for group_name, group in gb:
+        year, sex, treatment_group = group_name
+        bw_mean = f'birth_weight_mean_in_{year}_among_{sex.lower()}_iron_fortification_group_{treatment_group.lower()}'
+        bw_sd = f'birth_weight_sd_in_{year}_among_{sex.lower()}_iron_fortification_group_{treatment_group.lower()}'
+        birth_weights[bw_mean] = group.birth_weight.mean()
+        birth_weights[bw_sd] = group.birth_weight.std()
+
+    return birth_weights
+
+
 class LBWSGObserver:
 
     @property
