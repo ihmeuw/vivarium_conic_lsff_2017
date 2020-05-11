@@ -164,6 +164,7 @@ def load_and_write_measles_data(artifact: Artifact, location: str):
 def load_and_write_lri_data(artifact: Artifact, location: str):
     keys = [
         project_globals.LRI_PREVALENCE,
+        project_globals.LRI_BIRTH_PREVALENCE,
         project_globals.LRI_INCIDENCE_RATE,
         project_globals.LRI_REMISSION_RATE,
         project_globals.LRI_CAUSE_SPECIFIC_MORTALITY_RATE,

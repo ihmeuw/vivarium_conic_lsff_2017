@@ -54,6 +54,8 @@ MEASLES_DISABILITY_WEIGHT = 'cause.measles.disability_weight'
 MEASLES_RESTRICTIONS = 'cause.measles.restrictions'
 
 LRI_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.lower_respiratory_infections.cause_specific_mortality_rate'
+LRI_BIRTH_PREVALENCE = 'cause.lower_respiratory_infections.birth_prevalence'
+LRI_BIRTH_PREVALENCE_MEID = 1258
 LRI_PREVALENCE = 'cause.lower_respiratory_infections.prevalence'
 LRI_INCIDENCE_RATE = 'cause.lower_respiratory_infections.incidence_rate'
 LRI_REMISSION_RATE = 'cause.lower_respiratory_infections.remission_rate'

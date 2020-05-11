@@ -15,6 +15,7 @@ for an example.
 import pandas as pd
 import numpy as np
 
+from vivarium_gbd_access import gbd
 from gbd_mapping import causes, risk_factors, covariates, sequelae
 from vivarium.framework.artifact import EntityKey
 from vivarium_inputs import interface, utilities, utility_data, globals as vi_globals, extract
@@ -64,6 +65,7 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         project_globals.MEASLES_RESTRICTIONS: load_metadata,
 
         project_globals.LRI_PREVALENCE: load_standard_data,
+        project_globals.LRI_BIRTH_PREVALENCE: load_lri_birth_prevalence_from_meid,
         project_globals.LRI_INCIDENCE_RATE: load_standard_data,
         project_globals.LRI_REMISSION_RATE: load_standard_data,
         project_globals.LRI_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
@@ -334,6 +336,20 @@ def load_iron_responsive_proportion(key: str, location: str):
     non_responsive_prevalence = sum(non_responsive_prevalence)
 
     return (responsive_prevalence / (responsive_prevalence + non_responsive_prevalence)).fillna(0)
+
+
+def load_lri_birth_prevalence_from_meid(_, location):
+	"""Ignore the first argument to fit in to the get_data model. """
+	location_id = utility_data.get_location_id(location)
+	data = gbd.get_modelable_entity_draws(project_globals.LRI_BIRTH_PREVALENCE_MEID, location_id)
+	data = data[data.measure_id == vi_globals.MEASURES['Prevalence']]
+	data = utilities.normalize(data, fill_value=0)
+	data = data.filter(vi_globals.DEMOGRAPHIC_COLUMNS + vi_globals.DRAW_COLUMNS)
+	data = utilities.reshape(data)
+	data = utilities.scrub_gbd_conventions(data, location)
+	data = utilities.split_interval(data, interval_column='age', split_column_prefix='age')
+	data = utilities.split_interval(data, interval_column='year', split_column_prefix='year')
+	return utilities.sort_hierarchical_data(data)
 
 
 def get_entity(key: str):
