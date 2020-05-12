@@ -1,3 +1,4 @@
 from .iron_deficiency import IronDeficiency
 from .vitamin_a_deficiency import VitaminADeficiency
 from .neural_tube_defects import NeonatalSWC_without_incidence
+from .lri_birth_prevalence import NeonatalSIS
