@@ -15,7 +15,7 @@ for an example.
 import pandas as pd
 import numpy as np
 
-from vivarium_gbd_access import gbd
+from get_draws.api import get_draws
 from gbd_mapping import causes, risk_factors, covariates, sequelae
 from vivarium.framework.artifact import EntityKey
 from vivarium_inputs import interface, utilities, utility_data, globals as vi_globals, extract
@@ -337,19 +337,26 @@ def load_iron_responsive_proportion(key: str, location: str):
 
     return (responsive_prevalence / (responsive_prevalence + non_responsive_prevalence)).fillna(0)
 
-
 def load_lri_birth_prevalence_from_meid(_, location):
-	"""Ignore the first argument to fit in to the get_data model. """
-	location_id = utility_data.get_location_id(location)
-	data = gbd.get_modelable_entity_draws(project_globals.LRI_BIRTH_PREVALENCE_MEID, location_id)
-	data = data[data.measure_id == vi_globals.MEASURES['Prevalence']]
-	data = utilities.normalize(data, fill_value=0)
-	data = data.filter(vi_globals.DEMOGRAPHIC_COLUMNS + vi_globals.DRAW_COLUMNS)
-	data = utilities.reshape(data)
-	data = utilities.scrub_gbd_conventions(data, location)
-	data = utilities.split_interval(data, interval_column='age', split_column_prefix='age')
-	data = utilities.split_interval(data, interval_column='year', split_column_prefix='year')
-	return utilities.sort_hierarchical_data(data)
+    """Ignore the first argument to fit in to the get_data model. """
+    location_id = utility_data.get_location_id(location)
+    data = get_draws('modelable_entity_id', project_globals.LRI_BIRTH_PREVALENCE_MEID,
+                     source=project_globals.LRI_BIRTH_PREVALENCE_DRAW_SOURCE,
+                     age_group_id=project_globals.LRI_BIRTH_PREVALENCE_AGE_ID,
+                     measure_id=vi_globals.MEASURES['Prevalence'],
+                     gbd_round_id=project_globals.LRI_BIRTH_PREVALENCE_GBD_ROUND,
+                     location_id=location_id)
+    data = data[data.measure_id == vi_globals.MEASURES['Prevalence']]
+    data = utilities.normalize(data, fill_value=0)
+
+    idx_columns = vi_globals.DEMOGRAPHIC_COLUMNS
+    idx_columns.remove('age_group_id')
+    data = data.filter(idx_columns + vi_globals.DRAW_COLUMNS)
+
+    data = utilities.reshape(data)
+    data = utilities.scrub_gbd_conventions(data, location)
+    data = utilities.split_interval(data, interval_column='year', split_column_prefix='year')
+    return utilities.sort_hierarchical_data(data)
 
 
 def get_entity(key: str):
