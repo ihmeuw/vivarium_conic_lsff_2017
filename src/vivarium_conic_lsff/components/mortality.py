@@ -11,7 +11,7 @@ models to to contribute cause specific mortality. At each timestep the
 currently "alive" population is subjected to a mortality event that uses
 the mortality hazard data to reap simulants. A weighted probable cause of
 death is used to pick a cause of death. The years of life lost are calculated
-by subtracting the simulant's age from the population TMREL and the poplulation
+by subtracting the simulant's age from the population TMRLE and the poplulation
 is updated.
 
 Pipelines Exposed
@@ -25,7 +25,8 @@ Pipelines Exposed
 All cause mortality is read from the artifact (GBD). At setup cause specific
 mortality is initialized to an empty table. As disease models are incorporated
 they register as affecting cause specific mortality and their contributions
-are reflected in the cause_specific_mortality_rate pipeline.
+are reflected in the cause_specific_mortality_rate pipeline. This is population
+level data.
 
 The mortality component's mortality_rate pipeline reflects the
 cause deleted mortality rate (ACMR - CSMR).
