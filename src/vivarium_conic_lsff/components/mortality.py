@@ -3,8 +3,37 @@
 The Core Mortality Model
 ========================
 
-This module contains tools modeling all cause mortality and hooks for
-disease models to contribute cause-specific and excess mortality.
+Summary
+=======
+
+The mortality component models all cause mortality and allows for disease
+models to to contribute cause specific mortality. At each timestep the
+currently "alive" population is subjected to a mortality event that uses
+the mortality hazard data to reap simulants. A weighted probable cause of
+death is used to pick a cause of death. The years of life lost are calculated
+by subtracting the simulant's age from the population TMREL and the poplulation
+is updated.
+
+Pipelines Exposed
+=================
+
+ - cause_specific_mortality_rate
+ - mortality_rate
+ - all_causes.mortality_hazard
+
+
+All cause mortality is read from the artifact (GBD). At setup cause specific
+mortality is initialized to an empty table. As disease models are incorporated
+they register as affecting cause specific mortality and their contributions
+are reflected in the cause_specific_mortality_rate pipeline.
+
+The mortality component's mortality_rate pipeline reflects the
+cause deleted mortality rate (ACMR - CSMR).
+
+Finally, the mortality component exposes a mortality hazard pipeline and a
+mortality hazard PAF pipeline (used internally). The cause specific rates are
+summed and added to the cause deleted mortality rate. These values are multiplied
+by 1 - PAF. The end product comprises the values in the mortality hazard pipeline.
 
 """
 import pandas as pd
