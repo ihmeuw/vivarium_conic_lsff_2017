@@ -102,6 +102,23 @@ IRON_DEFICIENCY_SEVERE_ANEMIA_DISABILITY_WEIGHT = 'risk_factor.iron_deficiency.s
 
 IRON_DEFICIENCY_RESTRICTIONS = 'risk_factor.iron_deficiency.restrictions'
 
+# Cause specific mortality rates for causes affected by LBWSG but not included as a Disease Model
+URI_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.upper_respiratory_infections.cause_specific_mortality_rate'
+OTITIS_MEDIA_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.otitis_media.cause_specific_mortality_rate'
+PNEUMOCOCCAL_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.pneumococcal_meningitis.cause_specific_mortality_rate'
+H_INFLUENZAE_TYPE_B_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.h_influenzae_type_b_meningitis.cause_specific_mortality_rate'
+MENINGOCOCCAL_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.meningococcal_meningitis.cause_specific_mortality_rate'
+OTHER_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.other_meningitis.cause_specific_mortality_rate'
+ENCEPHALITIS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.encephalitis.cause_specific_mortality_rate'
+NEONATAL_PRETERM_BIRTH_COMPLICATIONS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.neonatal_preterm_birth_complications.cause_specific_mortality_rate'
+NEONATAL_ENCEPHALOPATHY_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.neonatal_encephalopathy.cause_specific_mortality_rate'
+NEONATAL_SEPSIS_AND_OTHER_NEONATAL_INFECTIONS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.neonatal_sepsis_and_other_neonatal_infections.cause_specific_mortality_rate'
+HEMOLYTIC_DISEASE_AND_OTHER_NEONATAL_JAUNDICE_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.hemolytic_disease_and_other_neonatal_jaundice.cause_specific_mortality_rate'
+OTHER_NEONATAL_DISORDERS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.other_neonatal_disorders.cause_specific_mortality_rate'
+SUDDEN_INFANT_DEATH_SYNDROME_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.sudden_infant_death_syndrome.cause_specific_mortality_rate'
+
+
+
 ANEMIA_SEQUELAE_ID_MAP = {
     'mild': (
         # responsive
