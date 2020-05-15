@@ -362,7 +362,7 @@ def load_lri_birth_prevalence_from_meid(_, location):
     data = data[data.measure_id == vi_globals.MEASURES['Prevalence']]
     data = utilities.normalize(data, fill_value=0)
 
-    idx_columns = vi_globals.DEMOGRAPHIC_COLUMNS
+    idx_columns = list(vi_globals.DEMOGRAPHIC_COLUMNS)
     idx_columns.remove('age_group_id')
     data = data.filter(idx_columns + vi_globals.DRAW_COLUMNS)
 
