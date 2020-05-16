@@ -261,7 +261,6 @@ def load_and_write_affected_unmodelled_lbwsg_csmr(artifact: Artifact, location: 
         project_globals.NEONATAL_SEPSIS_AND_OTHER_NEONATAL_INFECTIONS_CAUSE_SPECIFIC_MORTALITY_RATE,
         project_globals.HEMOLYTIC_DISEASE_AND_OTHER_NEONATAL_JAUNDICE_CAUSE_SPECIFIC_MORTALITY_RATE,
         project_globals.OTHER_NEONATAL_DISORDERS_CAUSE_SPECIFIC_MORTALITY_RATE,
-        project_globals.SUDDEN_INFANT_DEATH_SYNDROME_CAUSE_SPECIFIC_MORTALITY_RATE,
     ]
 
     for key in keys:

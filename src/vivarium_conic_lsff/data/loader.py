@@ -112,12 +112,11 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         project_globals.MENINGOCOCCAL_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
         project_globals.OTHER_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
         project_globals.ENCEPHALITIS_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
-        project_globals.NEONATAL_PRETERM_BIRTH_COMPLICATIONS_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
+        project_globals.NEONATAL_PRETERM_BIRTH_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
         project_globals.NEONATAL_ENCEPHALOPATHY_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
         project_globals.NEONATAL_SEPSIS_AND_OTHER_NEONATAL_INFECTIONS_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
         project_globals.HEMOLYTIC_DISEASE_AND_OTHER_NEONATAL_JAUNDICE_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
         project_globals.OTHER_NEONATAL_DISORDERS_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
-        project_globals.SUDDEN_INFANT_DEATH_SYNDROME_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
     }
     return mapping[lookup_key](lookup_key, location)
 
