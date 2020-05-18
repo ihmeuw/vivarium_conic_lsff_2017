@@ -245,3 +245,23 @@ def load_and_write_iron_deficiency_data(artifact: Artifact, location: str):
 
     for key in keys:
         load_and_write_data(artifact, key, location)
+
+
+def load_and_write_affected_unmodelled_lbwsg_csmr(artifact: Artifact, location: str):
+    keys = [
+        project_globals.URI_CAUSE_SPECIFIC_MORTALITY_RATE,
+        project_globals.OTITIS_MEDIA_CAUSE_SPECIFIC_MORTALITY_RATE,
+        project_globals.PNEUMOCOCCAL_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
+        project_globals.H_INFLUENZAE_TYPE_B_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
+        project_globals.MENINGOCOCCAL_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
+        project_globals.OTHER_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
+        project_globals.ENCEPHALITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
+        project_globals.NEONATAL_PRETERM_BIRTH_CAUSE_SPECIFIC_MORTALITY_RATE,
+        project_globals.NEONATAL_ENCEPHALOPATHY_CAUSE_SPECIFIC_MORTALITY_RATE,
+        project_globals.NEONATAL_SEPSIS_AND_OTHER_NEONATAL_INFECTIONS_CAUSE_SPECIFIC_MORTALITY_RATE,
+        project_globals.HEMOLYTIC_DISEASE_AND_OTHER_NEONATAL_JAUNDICE_CAUSE_SPECIFIC_MORTALITY_RATE,
+        project_globals.OTHER_NEONATAL_DISORDERS_CAUSE_SPECIFIC_MORTALITY_RATE,
+    ]
+
+    for key in keys:
+        load_and_write_data(artifact, key, location)
