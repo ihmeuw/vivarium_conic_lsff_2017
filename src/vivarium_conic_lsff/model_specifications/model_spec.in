@@ -25,6 +25,7 @@ components:
         - FolicAcidFortificationEffect()
         - FortificationIntervention()
         - MaternalIronFortificationEffect()
+        - HemoglobinIronFortificationEffect()
 
         - VitaminAFortificationCoverage()
         - VitaminAFortificationEffect()

@@ -529,6 +529,12 @@ GESTATIONAL_AGE_PRETERM = 'preterm'
 GESTATIONAL_AGE_CATEGORIES = (GESTATIONAL_AGE_NORMAL, GESTATIONAL_AGE_PRETERM)
 
 
+class __IRON_RANDOM_SEEDS(NamedTuple):
+    IF_AMOUNT: str = 'iron_fortification_amount_draw_{draw}_location_{location}'
+    IF_BW_SHIFT: str = 'iron_fortification_bw_shift_draw_{draw}_location_{location}'
+    IF_HEMO_EFFECT: str = 'iron_fortification_hemoglobin_effect_draw_{draw}'
+IRON_RANDOM_SEEDS = __IRON_RANDOM_SEEDS()
+
 ###########################
 # Intervention parameters #
 ###########################
@@ -554,7 +560,7 @@ VITAMIN_A_ANNUAL_PROPORTION_INCREASE = 0.1
 VITAMIN_A_FORTIFICATION_GROUPS = ['uncovered', 'covered', 'effectively_covered']
 
 IRON_FORTIFICATION_COVERAGE_MOM_COLUMN = 'mother_ate_iron_fortified_food'
-IRON_COVERAGE_START_TIME_COLUMN = 'iron_coverage_start_time'
+IRON_COVERAGE_START_AGE_COLUMN = 'iron_coverage_start_age'
 IRON_FORTIFICATION_PROPENSITY_COLUMN = 'iron_fortification_propensity'
 IRON_FORTIFICATION_FOOD_CONSUMPTION = 'iron_fortified_food_consumed'
 
