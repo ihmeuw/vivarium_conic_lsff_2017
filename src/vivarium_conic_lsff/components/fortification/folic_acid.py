@@ -299,23 +299,11 @@ class HemoglobinIronFortificationEffect:
                                        & (~pop_data.get(project_globals.IRON_COVERAGE_START_AGE_COLUMN)
                                           .isnull())].index
             if len(idx_covered):
-                # TODO - testing for new intervention coverage. Where does this go?
-                # shift_new_intervention = self.compute_shift_new_intervention(pop_data.loc[idx_covered])
                 shift = self.compute_shift(pop_data.loc[idx_covered])
                 hemoglobin_levels.loc[idx_covered] += shift
         return hemoglobin_levels
 
     def compute_shift(self, pop_data: pd.DataFrame) -> pd.Series:
-        effect = self.treatment_effect
-        shift = pd.Series(0.0, index=pop_data.index)
-        idx_over_half_year_under_two = pop_data.loc[(0.5 < pop_data.age) & (pop_data.age < 2.0)].index
-        idx_two_and_over = pop_data.loc[pop_data.age >= 2.0].index
-        shift.loc[idx_over_half_year_under_two] += (self.treatment_effect
-                                                    * (pop_data.loc[idx_over_half_year_under_two].age - 0.5)) / 1.5
-        shift.loc[idx_two_and_over] = effect
-        return shift
-
-    def compute_shift_new_intervention(self, pop_data: pd.DataFrame) -> pd.Series:
         shift = pd.Series(0.0, index=pop_data.index)
         coverage_start_age = pop_data.get(project_globals.IRON_COVERAGE_START_AGE_COLUMN)
         coverage_duration = pop_data.age - coverage_start_age
@@ -331,10 +319,9 @@ class HemoglobinIronFortificationEffect:
 
         shift.loc[idx_young_short_coverage] = (self.treatment_effect
                                                * (pop_data.loc[idx_young_short_coverage].age / 1.5)
-                                               * (pop_data.loc[
-                                                      idx_young_short_coverage].coverage_duration / 0.5))
+                                               * (coverage_duration.loc[idx_young_short_coverage] / 0.5))
         shift.loc[idx_young_long_coverage] = (self.treatment_effect
-                                              * (pop_data.loc[idx_young_short_coverage].age - 0.5) / 1.5)
+                                              * (pop_data.loc[idx_young_long_coverage].age - 0.5) / 1.5)
         shift.loc[idx_older_short_coverage] = (self.treatment_effect
                                                * (pop_data.loc[idx_older_short_coverage].age - 0.5))
         shift.loc[idx_older_long_coverage] = self.treatment_effect
