@@ -104,15 +104,12 @@ class FolicAcidAndIronFortificationCoverage:
 
     def on_time_step(self, event: 'Event'):
         """Update coverage start age for all newly covered individuals.
-
-           ??? - Currently has no effect. All of this gets done in on_initialize
         """
-        pop = self.population_view.get(event.index, query='tracked == True and alive=="alive"')
+        pop = self.population_view.get(event.index, query='alive=="alive"')
         is_covered = self.is_iron_covered(pop[self._iron_fort_propensity])
         not_previously_covered = pop[self._iron_coverage_start_age].isna()
         newly_covered = is_covered & not_previously_covered
-        if newly_covered.any():
-            pop.loc[newly_covered, self._iron_coverage_start_age] = pop.loc[newly_covered].age
+        pop.loc[newly_covered, self._iron_coverage_start_age] = pop.loc[newly_covered].age
         self.population_view.update(pop)
 
     def is_iron_covered(self, propensity: pd.Series) -> pd.Series:
