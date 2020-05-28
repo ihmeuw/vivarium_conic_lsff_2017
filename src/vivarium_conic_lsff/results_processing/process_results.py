@@ -204,7 +204,6 @@ def get_lbwsg(data, measure):
 
 
 
-
 # def get_risk_categories(data):
 #     data = pivot_data(data[project_globals.RESULT_COLUMNS('category_counts') + GROUPBY_COLUMNS])
 #     data['risk'], data['process'] = data.process.str.split('_cat').str
