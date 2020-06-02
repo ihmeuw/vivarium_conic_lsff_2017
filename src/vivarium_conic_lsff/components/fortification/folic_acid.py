@@ -294,13 +294,11 @@ class HemoglobinIronFortificationEffect:
         baseline_shift, hemoglobin_fortification_effect = self.treatment_effects
         pop_data = self.population_view.get(index)
         hemoglobin_levels[index] -= baseline_shift
-        covered = pop_data.loc[(pop_data.age > 0.5)
+        idx_covered = pop_data.loc[(pop_data.age > 0.5)
                                    & (~pop_data.get(project_globals.IRON_COVERAGE_START_AGE_COLUMN).isnull())
-                                   & self.iron_responsive(index)]
-        if len(covered):
-            idx_covered = covered.index
-            shift = self.compute_shift(pop_data.loc[idx_covered], hemoglobin_fortification_effect)
-            hemoglobin_levels.loc[idx_covered] += shift
+                                   & self.iron_responsive(index)].index
+        shift = self.compute_shift(pop_data.loc[idx_covered], hemoglobin_fortification_effect)
+        hemoglobin_levels.loc[idx_covered] += shift
         return hemoglobin_levels
 
     def compute_shift(self, pop_data: pd.DataFrame, hemoglobin_fortification_effect : float) -> pd.Series:
