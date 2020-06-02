@@ -282,25 +282,28 @@ class HemoglobinIronFortificationEffect:
         return 'hemoglobin_iron_fortification_effect'
 
     def setup(self, builder: 'Builder'):
-        self.treatment_effect = self.load_treatment_effects(builder)
+        self.treatment_effects = self.load_treatment_effects(builder)
         columns_required = ['age', project_globals.IRON_COVERAGE_START_AGE_COLUMN]
         builder.value.register_value_modifier(f'{project_globals.IRON_DEFICIENCY_MODEL_NAME}.exposure',
                                               self.adjust_hemoglobin_levels,
                                               requires_columns=columns_required)
         self.population_view = builder.population.get_view(columns_required)
+        self.iron_responsive = builder.value.get_value('iron_responsive')
 
     def adjust_hemoglobin_levels(self, index, hemoglobin_levels):
-        if len(index):
-            pop_data = self.population_view.get(index)
-            idx_covered = pop_data.loc[(pop_data.age > 0.5)
-                                       & (~pop_data.get(project_globals.IRON_COVERAGE_START_AGE_COLUMN)
-                                          .isnull())].index
-            if len(idx_covered):
-                shift = self.compute_shift(pop_data.loc[idx_covered])
-                hemoglobin_levels.loc[idx_covered] += shift
+        baseline_shift, hemoglobin_fortification_effect = self.treatment_effects
+        pop_data = self.population_view.get(index)
+        hemoglobin_levels[index] -= baseline_shift
+        covered = pop_data.loc[(pop_data.age > 0.5)
+                                   & (~pop_data.get(project_globals.IRON_COVERAGE_START_AGE_COLUMN).isnull())
+                                   & self.iron_responsive(index)]
+        if len(covered):
+            idx_covered = covered.index
+            shift = self.compute_shift(pop_data.loc[idx_covered], hemoglobin_fortification_effect)
+            hemoglobin_levels.loc[idx_covered] += shift
         return hemoglobin_levels
 
-    def compute_shift(self, pop_data: pd.DataFrame) -> pd.Series:
+    def compute_shift(self, pop_data: pd.DataFrame, hemoglobin_fortification_effect : float) -> pd.Series:
         shift = pd.Series(0.0, index=pop_data.index)
         coverage_start_age = pop_data.get(project_globals.IRON_COVERAGE_START_AGE_COLUMN)
         coverage_duration = pop_data.age - coverage_start_age
@@ -314,21 +317,26 @@ class HemoglobinIronFortificationEffect:
         idx_older_long_coverage = pop_data.loc[
             (coverage_start_age >= 1.5) & (coverage_duration >= 0.5)].index
 
-        shift.loc[idx_young_short_coverage] = (self.treatment_effect
+        shift.loc[idx_young_short_coverage] = (hemoglobin_fortification_effect
                                                * (pop_data.loc[idx_young_short_coverage].age / 1.5)
                                                * (coverage_duration.loc[idx_young_short_coverage] / 0.5))
-        shift.loc[idx_young_long_coverage] = (self.treatment_effect
+        shift.loc[idx_young_long_coverage] = (hemoglobin_fortification_effect
                                               * (pop_data.loc[idx_young_long_coverage].age - 0.5) / 1.5)
-        shift.loc[idx_older_short_coverage] = (self.treatment_effect
+        shift.loc[idx_older_short_coverage] = (hemoglobin_fortification_effect
                                                * (pop_data.loc[idx_older_short_coverage].age - 0.5))
-        shift.loc[idx_older_long_coverage] = self.treatment_effect
+        shift.loc[idx_older_long_coverage] = hemoglobin_fortification_effect
 
         return shift
 
     @staticmethod
     def load_treatment_effects(builder: 'Builder'):
-        return get_iron_hemoglobin_effect(
+        baseline_iron_coverage = params.sample_iron_fortification_coverage(
+            builder.configuration.input_data.location,
+            builder.configuration.input_data.input_draw_number, 'baseline')
+        iron_hemoglobin_effect = get_iron_hemoglobin_effect(
             builder.configuration.input_data.input_draw_number)
+        baseline_shift = baseline_iron_coverage * iron_hemoglobin_effect
+        return iron_hemoglobin_effect, baseline_shift
 
 
 def get_iron_hemoglobin_effect(draw: int):
