@@ -48,7 +48,7 @@ class IronDeficiency:
                                                                        requires_columns=['age', 'sex'],
                                                                        requires_values=[f'{self.name}.exposure'])
         builder.value.register_value_modifier('disability_weight', self.disability_weight)
-
+        
         self.raw_exposure = builder.value.register_value_producer(f'{self.name}.raw_exposure',
                                                                   source=self.get_exposure,
                                                                   requires_values=[f'{self.name}.exposure_parameters'])

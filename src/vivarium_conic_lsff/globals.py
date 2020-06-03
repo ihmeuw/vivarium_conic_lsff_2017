@@ -563,6 +563,7 @@ IRON_FORTIFICATION_COVERAGE_MOM_COLUMN = 'mother_ate_iron_fortified_food'
 IRON_COVERAGE_START_AGE_COLUMN = 'iron_coverage_start_age'
 IRON_FORTIFICATION_PROPENSITY_COLUMN = 'iron_fortification_propensity'
 IRON_FORTIFICATION_FOOD_CONSUMPTION = 'iron_fortified_food_consumed'
+IRON_MATERNAL_GROUPS = ['uncovered', 'covered']
 
 
 #################################
@@ -596,7 +597,7 @@ STATE_PERSON_TIME_COLUMN_TEMPLATE = '{STATE}_person_time_in_{YEAR}_among_{SEX}_i
 TRANSITION_COUNT_COLUMN_TEMPLATE = '{TRANSITION}_event_count_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_folic_acid_{FOLIC_ACID_GROUP}_vitamin_a_{VITAMIN_A_GROUP}'
 BIRTHS_COLUMN_TEMPLATE = 'live_births_in_{YEAR}_among_{SEX}_folic_acid_{FOLIC_ACID_GROUP}_vitamin_a_{VITAMIN_A_GROUP}'
 BORN_WITH_NTD_COLUMN_TEMPLATE = 'born_with_ntds_in_{YEAR}_among_{SEX}_folic_acid_{FOLIC_ACID_GROUP}_vitamin_a_{VITAMIN_A_GROUP}'
-BIRTH_WEIGHT_COLUMN_TEMPLATE = 'birth_weight_{STAT_STATE}'
+BIRTH_WEIGHT_COLUMN_TEMPLATE = 'birth_weight_{STAT_STATE}_in_{YEAR}_among_{SEX}_iron_fortification_group_{IRON_MATERNAL_GROUP}'
 GESTATIONAL_AGE_COLUMN_TEMPLATE = 'gestational_age_{STAT_STATE}'
 
 COLUMN_TEMPLATES = {
@@ -621,7 +622,7 @@ NON_COUNT_TEMPLATES = [
 POP_STATES = ('living', 'dead', 'tracked', 'untracked')
 STAT_MEASURES = ('mean', 'sd')
 SEXES = ('male', 'female')
-YEARS = tuple(range(2020, 2025))
+YEARS = tuple(range(2020, 2026))
 AGE_GROUPS = ('early_neonatal', 'late_neonatal', 'post_neonatal', '1_to_4')
 CAUSES_OF_DEATH = (
     'other_causes',
@@ -652,6 +653,7 @@ TEMPLATE_FIELD_MAP = {
     'STAT_STATE': STAT_MEASURES,
     'FOLIC_ACID_GROUP': FOLIC_ACID_FORTIFICATION_GROUPS,
     'VITAMIN_A_GROUP': VITAMIN_A_FORTIFICATION_GROUPS,
+    'IRON_MATERNAL_GROUP': IRON_MATERNAL_GROUPS
 }
 
 
