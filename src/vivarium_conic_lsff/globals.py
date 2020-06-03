@@ -543,6 +543,7 @@ class __SCENARIOS(NamedTuple):
     BASELINE: str = 'baseline'
     FOLIC_ACID: str = 'folic_acid_fortification_scale_up'
     VITAMIN_A: str = 'vitamin_a_fortification_scale_up'
+    IRON: str = 'iron_fortification_scale_up'
 
 
 SCENARIOS = __SCENARIOS()
@@ -564,6 +565,7 @@ IRON_COVERAGE_START_AGE_COLUMN = 'iron_coverage_start_age'
 IRON_FORTIFICATION_PROPENSITY_COLUMN = 'iron_fortification_propensity'
 IRON_FORTIFICATION_FOOD_CONSUMPTION = 'iron_fortified_food_consumed'
 IRON_MATERNAL_GROUPS = ['uncovered', 'covered']
+IRON_ANNUAL_PROPORTION_INCREASE = 0.1
 
 
 #################################
