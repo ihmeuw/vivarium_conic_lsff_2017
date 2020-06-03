@@ -54,14 +54,14 @@ class FolicAcidAndIronFortificationCoverage:
         # tracking columns for maternal fortification status and coverage age start
         self._fa_column = project_globals.FOLIC_ACID_FORTIFICATION_COVERAGE_COLUMN
         self._iron_fortified_mom_column = project_globals.IRON_FORTIFICATION_COVERAGE_MOM_COLUMN
-        self._iron_coverage_start_time = project_globals.IRON_COVERAGE_START_TIME_COLUMN
+        self._iron_coverage_start_age = project_globals.IRON_COVERAGE_START_AGE_COLUMN
         self._iron_fort_propensity = project_globals.IRON_FORTIFICATION_PROPENSITY_COLUMN
         self._iron_fort_food_consumption = project_globals.IRON_FORTIFICATION_FOOD_CONSUMPTION
         created_columns = [self._fa_column, self._iron_fortified_mom_column,
-                           self._iron_coverage_start_time, self._iron_fort_propensity,
+                           self._iron_coverage_start_age, self._iron_fort_propensity,
                            self._iron_fort_food_consumption]
 
-        self.population_view = builder.population.get_view(created_columns)
+        self.population_view = builder.population.get_view(created_columns + ['age'])
 
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  creates_columns=created_columns,
@@ -73,15 +73,13 @@ class FolicAcidAndIronFortificationCoverage:
     def on_initialize_simulants(self, pop_data: 'SimulantData'):
         pop_update = pd.DataFrame()
         draw = self.randomness.get_draw(pop_data.index)
+        update_iron_coverage_start_age = pd.Series(np.nan, index=pop_data.index, name=self._iron_coverage_start_age)
+        pop_age = self.population_view.subview(['age']).get(pop_data.index)
 
         if pop_data.user_data['sim_state'] == 'setup':  # Initial population
             update_maternal_folic_acid = pd.Series('unknown', index=pop_data.index, name=self._fa_column)
             update_maternal_iron = pd.Series('unknown', index=pop_data.index, name=self._iron_fortified_mom_column)
-
             iron_covered = self.is_iron_covered(draw)
-            update_iron_coverage_start_time = pd.Series((iron_covered).map({True: pop_data.creation_time, False: np.nan}),
-                                                        index=pop_data.index,
-                                                        name=self._iron_coverage_start_time)
             update_iron_amount = self.iron_amount(pop_data.index, iron_covered)
             pop_update[self._iron_fort_propensity] = draw
         else:  # New sims
@@ -89,31 +87,29 @@ class FolicAcidAndIronFortificationCoverage:
             update_maternal_folic_acid = pd.Series((draw < effective_coverage_fa).map({True: 'covered', False: 'uncovered'}),
                                                    index=pop_data.index,
                                                    name=self._fa_column)
-
-            effective_coverage_iron = self.iron_effective_coverage_level(pop_data.index)
-            iron_covered = draw < effective_coverage_iron
+            iron_covered = draw < self.iron_effective_coverage_level(pop_data.index)
             update_maternal_iron = pd.Series((iron_covered).map({True: 'covered', False: 'uncovered'}),
                                              index=pop_data.index,
                                              name=self._iron_fortified_mom_column)
-            update_iron_coverage_start_time = pd.Series((update_maternal_iron == 'covered').map({True: pop_data.creation_time, False: np.nan}),
-                                                        index=pop_data.index,
-                                                        name=self._iron_coverage_start_time)
             update_iron_amount = self.iron_amount(pop_data.index, iron_covered)
+
+        update_iron_coverage_start_age.loc[iron_covered] = pop_age.loc[iron_covered].age
 
         pop_update[self._fa_column] = update_maternal_folic_acid
         pop_update[self._iron_fortified_mom_column] = update_maternal_iron
-        pop_update[self._iron_coverage_start_time] = update_iron_coverage_start_time
+        pop_update[self._iron_coverage_start_age] = update_iron_coverage_start_age
         pop_update[self._iron_fort_food_consumption] = update_iron_amount
 
         self.population_view.update(pop_update)
 
     def on_time_step(self, event: 'Event'):
-        """Update coverage start age for all newly covered individuals."""
-        pop = self.population_view.get(event.index, query='tracked == True and alive=="alive"')
+        """Update coverage start age for all newly covered individuals.
+        """
+        pop = self.population_view.get(event.index, query='alive=="alive"')
         is_covered = self.is_iron_covered(pop[self._iron_fort_propensity])
-        not_previously_covered = pop[self._iron_coverage_start_time].isna()
+        not_previously_covered = pop[self._iron_coverage_start_age].isna()
         newly_covered = is_covered & not_previously_covered
-        pop.loc[newly_covered, self._iron_coverage_start_time] = event.time
+        pop.loc[newly_covered, self._iron_coverage_start_age] = pop.loc[newly_covered].age
         self.population_view.update(pop)
 
     def is_iron_covered(self, propensity: pd.Series) -> pd.Series:
@@ -130,31 +126,28 @@ class FolicAcidAndIronFortificationCoverage:
 
     @staticmethod
     def load_coverage_data_iron(builder: 'Builder') -> float:
-        return sample_iron_coverage(
+        return params.sample_iron_fortification_coverage(
+            builder.configuration.input_data.location,
             builder.configuration.input_data.input_draw_number,
-            builder.configuration.input_data.location)
+            'baseline')
 
     @staticmethod
     def load_coverage_data_folic_acid(builder: 'Builder') -> float:
-        location = builder.configuration.input_data.location
-        draw = builder.configuration.input_data.input_draw_number
-        return params.sample_folic_acid_coverage(location, draw, 'baseline')
+        return params.sample_folic_acid_coverage(
+            builder.configuration.input_data.location,
+            builder.configuration.input_data.input_draw_number,
+            'baseline')
 
     @staticmethod
     def load_iron_content_ratio(builder: 'Builder') -> float:
-        location = builder.configuration.input_data.location
-        draw = builder.configuration.input_data.input_draw_number
-        return iron_content_ratio(draw, location)
-
-
-def sample_iron_coverage(draw: str, location: str) -> float:
-    """ Used from both the coverage and maternal fortification effect """
-    return params.sample_iron_fortification_coverage(location, draw, 'baseline')
+        return iron_content_ratio(
+            builder.configuration.input_data.input_draw_number,
+            builder.configuration.input_data.location)
 
 
 def iron_content_ratio(draw: str, location: str) -> float:
     """ Used from both the coverage and maternal fortification effect """
-    seed = get_hash(f'iron_fortification_amount_draw_{draw}_location_{location}')
+    seed = get_hash(project_globals.IRON_RANDOM_SEEDS.IF_AMOUNT.format(draw=draw, location=location))
     np.random.seed(seed)
     iron_lower, iron_upper = params.IRON_VALUES_PER_LOCATION[location]
     if iron_lower == iron_upper:
@@ -214,10 +207,8 @@ class MaternalIronFortificationEffect:
 
     def setup(self, builder: 'Builder'):
         self.treatment_effects = self.load_treatment_effects(builder)
-
         builder.value.register_value_modifier(f'low_birth_weight_and_short_gestation.exposure',
                                               self.adjust_birth_weights)
-
         self._fortified = project_globals.IRON_FORTIFICATION_COVERAGE_MOM_COLUMN
         self._iron_consumed = project_globals.IRON_FORTIFICATION_FOOD_CONSUMPTION
         self.population_view = builder.population.get_view([self._fortified, self._iron_consumed])
@@ -237,7 +228,7 @@ class MaternalIronFortificationEffect:
     def load_treatment_effects(builder: 'Builder'):
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
-        baseline_iron_coverage = sample_iron_coverage(draw, location)
+        baseline_iron_coverage = params.sample_iron_fortification_coverage(location, draw, 'baseline')
         iron_ratio = iron_content_ratio(draw, location)
         iron_effect = get_iron_bw_effect(draw, location)
         baseline_shift = iron_effect * baseline_iron_coverage * params.MEAN_FLOUR_CONSUMPTION * iron_ratio
@@ -245,10 +236,10 @@ class MaternalIronFortificationEffect:
 
 
 def get_iron_bw_effect(draw, location):
+    seed = get_hash(project_globals.IRON_RANDOM_SEEDS.IF_BW_SHIFT.format(draw=draw, location=location))
+    np.random.seed(seed)
     q_975_stdnorm = scipy.stats.norm().ppf(0.975)
     std = (params.IF_Q975_BW_SHIFT - params.IF_MEAN_BW_SHIFT) / q_975_stdnorm
-    seed = get_hash(f'iron_fortification_bw_shift_draw_{draw}_location_{location}')
-    np.random.seed(seed)
     return scipy.stats.norm(params.IF_MEAN_BW_SHIFT, std).rvs() / params.IRON_EFFECT_DENOMINATOR
 
 
@@ -282,3 +273,74 @@ class IronAmountDistribution():
                                                   + self._flour_quantiles.Q3)
 
         return flour_consumption * self._iron_ratio
+
+
+class HemoglobinIronFortificationEffect:
+
+    @property
+    def name(self):
+        return 'hemoglobin_iron_fortification_effect'
+
+    def setup(self, builder: 'Builder'):
+        self.treatment_effects = self.load_treatment_effects(builder)
+        columns_required = ['age', project_globals.IRON_COVERAGE_START_AGE_COLUMN]
+        builder.value.register_value_modifier(f'{project_globals.IRON_DEFICIENCY_MODEL_NAME}.exposure',
+                                              self.adjust_hemoglobin_levels,
+                                              requires_columns=columns_required)
+        self.population_view = builder.population.get_view(columns_required)
+        self.iron_responsive = builder.value.get_value('iron_responsive')
+
+    def adjust_hemoglobin_levels(self, index, hemoglobin_levels):
+        baseline_shift, hemoglobin_fortification_effect = self.treatment_effects
+        pop_data = self.population_view.get(index)
+        hemoglobin_levels[index] -= baseline_shift
+        idx_covered = pop_data.loc[(pop_data.age > 0.5)
+                                   & (~pop_data.get(project_globals.IRON_COVERAGE_START_AGE_COLUMN).isnull())
+                                   & self.iron_responsive(index)].index
+        shift = self.compute_shift(pop_data.loc[idx_covered], hemoglobin_fortification_effect)
+        hemoglobin_levels.loc[idx_covered] += shift
+        return hemoglobin_levels
+
+    def compute_shift(self, pop_data: pd.DataFrame, hemoglobin_fortification_effect : float) -> pd.Series:
+        shift = pd.Series(0.0, index=pop_data.index)
+        coverage_start_age = pop_data.get(project_globals.IRON_COVERAGE_START_AGE_COLUMN)
+        coverage_duration = pop_data.age - coverage_start_age
+
+        idx_young_short_coverage = pop_data.loc[
+            (coverage_start_age < 1.5) & (coverage_duration < 0.5)].index
+        idx_young_long_coverage = pop_data.loc[
+            (coverage_start_age < 1.5) & (coverage_duration >= 0.5)].index
+        idx_older_short_coverage = pop_data.loc[
+            (coverage_start_age >= 1.5) & (coverage_duration < 0.5)].index
+        idx_older_long_coverage = pop_data.loc[
+            (coverage_start_age >= 1.5) & (coverage_duration >= 0.5)].index
+
+        shift.loc[idx_young_short_coverage] = (hemoglobin_fortification_effect
+                                               * (pop_data.loc[idx_young_short_coverage].age / 1.5)
+                                               * (coverage_duration.loc[idx_young_short_coverage] / 0.5))
+        shift.loc[idx_young_long_coverage] = (hemoglobin_fortification_effect
+                                              * (pop_data.loc[idx_young_long_coverage].age - 0.5) / 1.5)
+        shift.loc[idx_older_short_coverage] = (hemoglobin_fortification_effect
+                                               * (pop_data.loc[idx_older_short_coverage].age - 0.5))
+        shift.loc[idx_older_long_coverage] = hemoglobin_fortification_effect
+
+        return shift
+
+    @staticmethod
+    def load_treatment_effects(builder: 'Builder'):
+        baseline_iron_coverage = params.sample_iron_fortification_coverage(
+            builder.configuration.input_data.location,
+            builder.configuration.input_data.input_draw_number, 'baseline')
+        iron_hemoglobin_effect = get_iron_hemoglobin_effect(
+            builder.configuration.input_data.input_draw_number)
+        baseline_shift = baseline_iron_coverage * iron_hemoglobin_effect
+        return iron_hemoglobin_effect, baseline_shift
+
+
+def get_iron_hemoglobin_effect(draw: int):
+    """Return normal distribution of hemoglobin shifts resulting from iron fortification"""
+    seed = get_hash(project_globals.IRON_RANDOM_SEEDS.IF_HEMO_EFFECT.format(draw=draw))
+    np.random.seed(seed)
+    q_975_stdnorm = scipy.stats.norm().ppf(0.975)
+    std = (params.HEMOGLOBIN_SHIFT_Q_975 - params.HEMOGLOBIN_SHIFT_MEAN) / q_975_stdnorm
+    return scipy.stats.norm(params.HEMOGLOBIN_SHIFT_MEAN, std).rvs()
