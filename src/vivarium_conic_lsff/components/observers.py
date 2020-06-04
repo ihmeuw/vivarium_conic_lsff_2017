@@ -4,6 +4,7 @@ import typing
 from typing import Dict, Iterable, List, Tuple, Union
 
 import pandas as pd
+import numpy as np
 from vivarium_public_health.metrics.disability import get_years_lived_with_disability
 from vivarium_public_health.metrics import (MortalityObserver as MortalityObserver_,
                                             DisabilityObserver as DisabilityObserver_)
@@ -568,7 +569,7 @@ class HemoglobinLevelObserver():
                 stats = self.get_hemoglobin_stats(pop_in_group)
                 stats = {f'{k}_at_age_{age}_status_{cov_label}_responsive_{resp_label}': v
                           for k, v in stats.items()}
-                self.results.update(stats)
+                update_list(self.results, stats)
 
     def get_results_template(self):
         stats = {}
@@ -577,8 +578,7 @@ class HemoglobinLevelObserver():
                           ['responsive', 'non-responsive'])
         for age, covered_cat, responsive_cat in categories:
             suffix = f'age_{age}_status_{covered_cat}_responsive_{responsive_cat}'
-            stats[f'hemoglobin_mean_at_{suffix}'] = 0
-            stats[f'hemoglobin_variance_at_{suffix}'] = 0
+            stats[f'hemoglobin_mean_at_{suffix}'] = [0.0]
         return stats
 
 
@@ -586,11 +586,25 @@ class HemoglobinLevelObserver():
         stats = {}
         if not pop.empty:
             pop = pop.drop(columns='age')
-            hemoglobin_level = self.hemoglobin(pop.index, skip_post_processor=True)
-            stats[f'hemoglobin_mean'] = hemoglobin_level.mean()
-            stats[f'hemoglobin_variance'] = hemoglobin_level.var()
+            hemoglobin_level = self.hemoglobin(pop.index)
+            stats[f'hemoglobin_mean'] = hemoglobin_level.values
         return stats
 
     def metrics(self, index, metrics):
-        metrics.update(self.results)
+        final_results = post_process_hemoglobin(self.results)
+        metrics.update(final_results)
         return metrics
+
+
+def update_list(master : dict, data_to_add : dict):
+    for k in data_to_add.keys():
+        master[k].extend(data_to_add[k])
+
+
+def post_process_hemoglobin(raw_results: dict):
+    final_results = {}
+    for k in raw_results.keys():
+        final_results[k] = np.mean(raw_results[k])
+        variance_key = k.replace('mean', 'variance')
+        final_results[variance_key] = np.var(raw_results[k])
+    return final_results
