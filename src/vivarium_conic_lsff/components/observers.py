@@ -521,3 +521,76 @@ class LBWSGObserver:
     def metrics(self, index, metrics):
         metrics.update(self.results)
         return metrics
+
+
+class HemoglobinLevelObserver():
+
+    @property
+    def name(self):
+        return project_globals.HEMOGLOBIN_OBSERVER
+
+
+    def setup(self, builder):
+        self.hemoglobin = builder.value.get_value(f'{project_globals.IRON_DEFICIENCY_MODEL_NAME}.exposure')
+        self.iron_responsive = builder.value.get_value('iron_responsive')
+
+        self.record_ages = [0.5, 1, 2, 3]
+        self.population_view = builder.population.get_view(['age',
+                                                            project_globals.IRON_COVERAGE_START_AGE_COLUMN],
+                                                           query='alive == "alive"')
+        self.results = self.get_results_template()
+
+        builder.event.register_listener('collect_metrics', self.on_collect_metrics)
+        builder.value.register_value_modifier('metrics', self.metrics)
+
+    def on_collect_metrics(self, event):
+        pop = self.population_view.get(event.index)
+        for age in self.record_ages:
+            pop_age = pop[(age <= pop.age) & (pop.age < age + to_years(event.step_size))]
+
+            responsive = self.iron_responsive(pop_age.index)
+            idx_resp = responsive[responsive].index
+            idx_non_resp = responsive[~responsive].index
+
+            idx_covered = pop_age.loc[(pop_age.age > 0.5)
+                                      & (~pop_age.get(project_globals.IRON_COVERAGE_START_AGE_COLUMN).isnull())
+                                      & responsive].index
+            idx_uncovered = pop_age.index.difference(idx_covered)
+
+            categories = itertools.product([('covered', idx_covered), ('uncovered', idx_uncovered)],
+                                           [('responsive', idx_resp), ('non-responsive', idx_non_resp)])
+            for covered_cat, responsive_cat in categories:
+                cov_label, cov_index = covered_cat
+                resp_label, resp_index = responsive_cat
+                idx = cov_index.intersection(resp_index)
+                pop_in_group = pop_age.loc[idx]
+
+                stats = self.get_hemoglobin_stats(pop_in_group)
+                stats = {f'{k}_at_age_{age}_status_{cov_label}_responsive_{resp_label}': v
+                          for k, v in stats.items()}
+                self.results.update(stats)
+
+    def get_results_template(self):
+        stats = {}
+        categories = itertools.product(['0.5', '1', '2', '3'],
+                          ['covered', 'uncovered'],
+                          ['responsive', 'non-responsive'])
+        for age, covered_cat, responsive_cat in categories:
+            suffix = f'age_{age}_status_{covered_cat}_responsive_{responsive_cat}'
+            stats[f'hemoglobin_mean_at_{suffix}'] = 0
+            stats[f'hemoglobin_variance_at_{suffix}'] = 0
+        return stats
+
+
+    def get_hemoglobin_stats(self, pop):
+        stats = {}
+        if not pop.empty:
+            pop = pop.drop(columns='age')
+            hemoglobin_level = self.hemoglobin(pop.index, skip_post_processor=True)
+            stats[f'hemoglobin_mean'] = hemoglobin_level.mean()
+            stats[f'hemoglobin_variance'] = hemoglobin_level.var()
+        return stats
+
+    def metrics(self, index, metrics):
+        metrics.update(self.results)
+        return metrics
