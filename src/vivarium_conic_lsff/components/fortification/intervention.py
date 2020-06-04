@@ -6,7 +6,8 @@ import pandas as pd
 from vivarium_public_health.utilities import to_years
 
 from vivarium_conic_lsff.components.fortification.parameters import (sample_folic_acid_coverage,
-                                                                     sample_vitamin_a_coverage)
+                                                                     sample_vitamin_a_coverage,
+                                                                     sample_iron_fortification_coverage)
 from vivarium_conic_lsff import globals as project_globals
 
 if typing.TYPE_CHECKING:
@@ -40,6 +41,7 @@ class FortificationIntervention:
         # Add new intervention components here.
         self.folic_acid_intervention = FolicAcidFortificationIntervention()
         self.vitamin_a_intervention = VitaminAFortificationIntervention()
+        self.iron_intervention = IronFortificationIntervention()
 
     @property
     def name(self) -> str:
@@ -50,7 +52,7 @@ class FortificationIntervention:
     def sub_components(self) -> List:
         """Specific interventions on fortified vehicle coverage."""
         # Add new intervention components here.
-        return [self.folic_acid_intervention, self.vitamin_a_intervention]
+        return [self.folic_acid_intervention, self.vitamin_a_intervention, self.iron_intervention]
 
     def setup(self, builder: 'Builder'):
         """Select which fortification effects to use based on scenario."""
@@ -69,6 +71,11 @@ class FortificationIntervention:
             builder.value.register_value_modifier(
                 'vitamin_a_fortification.coverage_level',
                 self.vitamin_a_intervention.adjust_coverage_level
+            )
+        elif scenario == project_globals.SCENARIOS.IRON:
+            builder.value.register_value_modifier(
+                'iron_fortification.coverage_level',
+                self.iron_intervention.adjust_coverage_level
             )
         else:
             raise ValueError(f'Invalid fortification intervention scenario: {scenario}')
@@ -190,3 +197,50 @@ class VitaminAFortificationIntervention:
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
         return sample_vitamin_a_coverage(location, draw, coverage_time)
+
+
+class IronFortificationIntervention:
+    """Intervention on iron fortification level."""
+
+    @property
+    def name(self):
+        """This component's canonical name."""
+        return 'iron_fortification_intervention'
+
+    # noinspection PyAttributeOutsideInit,DuplicatedCode
+    def setup(self, builder: 'Builder'):
+        """Perform this component's setup."""
+        self.sim_start = pd.Timestamp(**builder.configuration.time.start.to_dict())
+        self.intervention_start = pd.Timestamp(
+            **builder.configuration.fortification_intervention.intervention_start.to_dict()
+        )
+        self.clock = builder.time.clock()
+        coverage_start = self.load_coverage_data(builder, 'intervention_start')
+        self.coverage_start = builder.lookup.build_table(coverage_start)
+        coverage_end = self.load_coverage_data(builder, 'intervention_end')
+        self.coverage_end = builder.lookup.build_table(coverage_end)
+
+    # noinspection PyUnusedLocal,DuplicatedCode
+    def adjust_coverage_level(self, index, coverage):
+        """Adjust the coverage level of iron fortification."""
+        time_since_intervention_start = max(to_years(self.clock() - self.intervention_start), 0)
+        if time_since_intervention_start > 0:
+            c_start, c_end = self.coverage_start(index), self.coverage_end(index)
+            # noinspection PyTypeChecker
+            new_coverage = (c_end
+                            - (c_end - c_start)
+                            * (1 - project_globals.IRON_ANNUAL_PROPORTION_INCREASE)**time_since_intervention_start)
+            coverage = new_coverage
+        return coverage
+
+    @staticmethod
+    def load_coverage_data(builder: 'Builder', coverage_time: str) -> float:
+        """Loads coverage levels at different periods of the intervention.
+
+        `coverage_time` must be one of 'intervention_start',
+        'intervention_end'.
+
+        """
+        location = builder.configuration.input_data.location
+        draw = builder.configuration.input_data.input_draw_number
+        return sample_iron_fortification_coverage(location, draw, coverage_time)
