@@ -567,6 +567,9 @@ IRON_FORTIFICATION_FOOD_CONSUMPTION = 'iron_fortified_food_consumed'
 IRON_MATERNAL_GROUPS = ['uncovered', 'covered']
 IRON_ANNUAL_PROPORTION_INCREASE = 0.1
 HEMOGLOBIN_OBSERVER = 'HemoglobinObserver'
+HEMOGLOBIN_AGE_GROUPS = ['0.5', '1', '2', '3']
+HEMOGLOBIN_STATUS_GROUPS = ['covered', 'uncovered']
+HEMOGLOBIN_RESPONSE_GROUPS = ['responsive', 'non-responsive']
 
 
 #################################
@@ -602,6 +605,7 @@ BIRTHS_COLUMN_TEMPLATE = 'live_births_in_{YEAR}_among_{SEX}_folic_acid_{FOLIC_AC
 BORN_WITH_NTD_COLUMN_TEMPLATE = 'born_with_ntds_in_{YEAR}_among_{SEX}_folic_acid_{FOLIC_ACID_GROUP}_vitamin_a_{VITAMIN_A_GROUP}'
 BIRTH_WEIGHT_COLUMN_TEMPLATE = 'birth_weight_{STAT_STATE}_in_{YEAR}_among_{SEX}_iron_fortification_group_{IRON_MATERNAL_GROUP}'
 GESTATIONAL_AGE_COLUMN_TEMPLATE = 'gestational_age_{STAT_STATE}'
+HEMOGLOBIN_COLUMN_TEMPLATE = 'hemoglobin_{HEMOGLOBIN_STAT_MEASURE}_at_age_{HEMOGLOBIN_AGE_GROUP}_status_{HEMOGLOBIN_STATUS_GROUP}_responsive_{HEMOGLOBIN_RESPONSE_GROUP}'
 
 COLUMN_TEMPLATES = {
     'population': TOTAL_POPULATION_COLUMN_TEMPLATE,
@@ -615,15 +619,18 @@ COLUMN_TEMPLATES = {
     'born_with_ntds': BORN_WITH_NTD_COLUMN_TEMPLATE,
     'birth_weight': BIRTH_WEIGHT_COLUMN_TEMPLATE,
     'gestational_age': GESTATIONAL_AGE_COLUMN_TEMPLATE,
+    'hemoglobin': HEMOGLOBIN_COLUMN_TEMPLATE,
 }
 
 NON_COUNT_TEMPLATES = [
     'birth_weight',
-    'gestational_age'
+    'gestational_age',
+    'hemoglobin'
 ]
 
 POP_STATES = ('living', 'dead', 'tracked', 'untracked')
 STAT_MEASURES = ('mean', 'sd')
+HEMOGLOBIN_STAT_MEASURES = ('mean', 'variance')
 SEXES = ('male', 'female')
 YEARS = tuple(range(2020, 2026))
 AGE_GROUPS = ('early_neonatal', 'late_neonatal', 'post_neonatal', '1_to_4')
@@ -656,7 +663,11 @@ TEMPLATE_FIELD_MAP = {
     'STAT_STATE': STAT_MEASURES,
     'FOLIC_ACID_GROUP': FOLIC_ACID_FORTIFICATION_GROUPS,
     'VITAMIN_A_GROUP': VITAMIN_A_FORTIFICATION_GROUPS,
-    'IRON_MATERNAL_GROUP': IRON_MATERNAL_GROUPS
+    'IRON_MATERNAL_GROUP': IRON_MATERNAL_GROUPS,
+    'HEMOGLOBIN_AGE_GROUP': HEMOGLOBIN_AGE_GROUPS,
+    'HEMOGLOBIN_STATUS_GROUP': HEMOGLOBIN_STATUS_GROUPS,
+    'HEMOGLOBIN_RESPONSE_GROUP': HEMOGLOBIN_RESPONSE_GROUPS,
+    'HEMOGLOBIN_STAT_MEASURE': HEMOGLOBIN_STAT_MEASURES
 }
 
 

@@ -535,7 +535,6 @@ class HemoglobinLevelObserver():
         self.hemoglobin = builder.value.get_value(f'{project_globals.IRON_DEFICIENCY_MODEL_NAME}.exposure')
         self.iron_responsive = builder.value.get_value('iron_responsive')
 
-        self.record_ages = [0.5, 1, 2, 3]
         self.population_view = builder.population.get_view(['age',
                                                             project_globals.IRON_COVERAGE_START_AGE_COLUMN],
                                                            query='alive == "alive"')
@@ -546,8 +545,8 @@ class HemoglobinLevelObserver():
 
     def on_collect_metrics(self, event):
         pop = self.population_view.get(event.index)
-        for age in self.record_ages:
-            pop_age = pop[(age <= pop.age) & (pop.age < age + to_years(event.step_size))]
+        for age in project_globals.HEMOGLOBIN_AGE_GROUPS:
+            pop_age = pop[(float(age) <= pop.age) & (pop.age < float(age) + to_years(event.step_size))]
 
             responsive = self.iron_responsive(pop_age.index)
             idx_resp = responsive[responsive].index
@@ -572,9 +571,9 @@ class HemoglobinLevelObserver():
 
     def get_results_template(self):
         stats = {}
-        categories = itertools.product(['0.5', '1', '2', '3'],
-                          ['covered', 'uncovered'],
-                          ['responsive', 'non-responsive'])
+        categories = itertools.product(project_globals.HEMOGLOBIN_AGE_GROUPS,
+                          project_globals.HEMOGLOBIN_STATUS_GROUPS,
+                          project_globals.HEMOGLOBIN_RESPONSE_GROUPS)
         for age, covered_cat, responsive_cat in categories:
             suffix = f'age_{age}_status_{covered_cat}_responsive_{responsive_cat}'
             stats[f'hemoglobin_mean_at_{suffix}'] = [0.0]
