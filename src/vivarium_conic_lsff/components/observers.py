@@ -554,8 +554,7 @@ class HemoglobinLevelObserver():
             idx_non_resp = responsive[~responsive].index
 
             idx_covered = pop_age.loc[(pop_age.age > 0.5)
-                                      & (~pop_age.get(project_globals.IRON_COVERAGE_START_AGE_COLUMN).isnull())
-                                      & responsive].index
+                                      & (~pop_age.get(project_globals.IRON_COVERAGE_START_AGE_COLUMN).isnull())].index
             idx_uncovered = pop_age.index.difference(idx_covered)
 
             categories = itertools.product([('covered', idx_covered), ('uncovered', idx_uncovered)],
