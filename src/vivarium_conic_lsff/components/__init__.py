@@ -6,4 +6,5 @@ from .fortification import (FolicAcidAndIronFortificationCoverage, FolicAcidFort
                             FortificationIntervention, MaternalIronFortificationEffect,
                             HemoglobinIronFortificationEffect)
 from .observers import (DiseaseObserver, LiveBirthWithNTDObserver, LBWSGObserver,
-                        MortalityObserver, DisabilityObserver, BirthweightObserver)
+                        MortalityObserver, DisabilityObserver, BirthweightObserver,
+                        HemoglobinLevelObserver)

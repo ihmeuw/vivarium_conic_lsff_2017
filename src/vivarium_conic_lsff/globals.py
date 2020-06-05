@@ -566,6 +566,7 @@ IRON_FORTIFICATION_PROPENSITY_COLUMN = 'iron_fortification_propensity'
 IRON_FORTIFICATION_FOOD_CONSUMPTION = 'iron_fortified_food_consumed'
 IRON_MATERNAL_GROUPS = ['uncovered', 'covered']
 IRON_ANNUAL_PROPORTION_INCREASE = 0.1
+HEMOGLOBIN_OBSERVER = 'HemoglobinObserver'
 
 
 #################################
