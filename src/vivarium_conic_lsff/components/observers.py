@@ -535,7 +535,7 @@ class HemoglobinLevelObserver():
         self.hemoglobin = builder.value.get_value(f'{project_globals.IRON_DEFICIENCY_MODEL_NAME}.exposure')
         self.iron_responsive = builder.value.get_value('iron_responsive')
 
-        self.population_view = builder.population.get_view(['age',
+        self.population_view = builder.population.get_view(['age', 'sex',
                                                             project_globals.IRON_COVERAGE_START_AGE_COLUMN],
                                                            query='alive == "alive"')
         self.results = self.get_results_template()
@@ -572,11 +572,12 @@ class HemoglobinLevelObserver():
     def get_results_template(self):
         stats = {}
         categories = itertools.product(project_globals.HEMOGLOBIN_AGE_GROUPS,
-                          project_globals.HEMOGLOBIN_STATUS_GROUPS,
-                          project_globals.HEMOGLOBIN_RESPONSE_GROUPS)
-        for age, covered_cat, responsive_cat in categories:
+                                       project_globals.HEMOGLOBIN_STATUS_GROUPS,
+                                       project_globals.HEMOGLOBIN_RESPONSE_GROUPS,
+                                       project_globals.SEXES,)
+        for age, covered_cat, responsive_cat, sex in categories:
             suffix = f'age_{age}_status_{covered_cat}_responsive_{responsive_cat}'
-            stats[f'hemoglobin_mean_at_{suffix}'] = [0.0]
+            stats[f'hemoglobin_mean_sex_{sex}_at_{suffix}'] = [0.0]
         return stats
 
 
@@ -584,8 +585,9 @@ class HemoglobinLevelObserver():
         stats = {}
         if not pop.empty:
             pop = pop.drop(columns='age')
-            hemoglobin_level = self.hemoglobin(pop.index)
-            stats[f'hemoglobin_mean'] = hemoglobin_level.values
+            pop['hemoglobin_level'] = self.hemoglobin(pop.index)
+            stats[f'hemoglobin_mean_sex_male'] = pop.query('sex=="Male"')['hemoglobin_level'].values
+            stats[f'hemoglobin_mean_sex_female'] = pop.query('sex=="Female"')['hemoglobin_level'].values
         return stats
 
     def metrics(self, index, metrics):
