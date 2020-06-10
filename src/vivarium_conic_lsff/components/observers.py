@@ -577,7 +577,7 @@ class HemoglobinLevelObserver():
                                        project_globals.SEXES,)
         for age, covered_cat, responsive_cat, sex in categories:
             suffix = f'age_{age}_status_{covered_cat}_responsive_{responsive_cat}'
-            stats[f'hemoglobin_mean_sex_{sex}_at_{suffix}'] = [0.0]
+            stats[f'hemoglobin_mean_among_{sex}_at_{suffix}'] = [0.0]
         return stats
 
 
@@ -586,8 +586,8 @@ class HemoglobinLevelObserver():
         if not pop.empty:
             pop = pop.drop(columns='age')
             pop['hemoglobin_level'] = self.hemoglobin(pop.index)
-            stats[f'hemoglobin_mean_sex_male'] = pop.query('sex=="Male"')['hemoglobin_level'].values
-            stats[f'hemoglobin_mean_sex_female'] = pop.query('sex=="Female"')['hemoglobin_level'].values
+            stats[f'hemoglobin_mean_among_male'] = pop.query('sex=="Male"')['hemoglobin_level'].values
+            stats[f'hemoglobin_mean_among_female'] = pop.query('sex=="Female"')['hemoglobin_level'].values
         return stats
 
     def metrics(self, index, metrics):

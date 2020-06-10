@@ -40,6 +40,7 @@ components:
         - LBWSGObserver()
         - DisabilityObserver()
         - MortalityObserver()
+        - HemoglobinLevelObserver()
 
 
 configuration:
