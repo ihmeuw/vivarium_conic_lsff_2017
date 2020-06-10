@@ -52,7 +52,7 @@ def make_measure_data(data):
         births_with_ntd=get_births(data, with_ntds=True),
         birth_weight=get_measure_no_split(data, 'birth_weight'),
         gestational_age=get_measure_no_split(data, 'gestational_age'),
-        hemoglobin_level=get_measure_no_split(data, 'hemoglobin'),
+        hemoglobin_level=get_measure_hb_split(data, 'hemoglobin'),
     )
     return measure_data
 
@@ -167,6 +167,13 @@ def split_processing_column(data, with_cause):
     data['folic_acid_fortification_group'], data['vitamin_a_fortification_group'] = process.str.split('_vitamin_a_').str
     return data.drop(columns='process')
 
+def split_hb_processing_column(data):
+    data['measure'], remainder = data.process.str.split('_among_').str
+    data['sex'], remainder = remainder.str.split('_at_age_').str
+    data['age'], remainder = remainder.str.split('_status_').str
+    data['status'], data['responsive'] = remainder.str.split('_responsive_').str
+    return data.drop(columns='process')
+
 
 def get_population_data(data):
     total_pop = pivot_data(data[[project_globals.TOTAL_POPULATION_COLUMN]
@@ -204,6 +211,11 @@ def get_measure_no_split(data, measure):
     data = pivot_data(data[project_globals.RESULT_COLUMNS(measure) + GROUPBY_COLUMNS])
     return sort_data(data.rename(columns={'process': 'measure'}))
 
+
+def get_measure_hb_split(data, measure):
+    data = pivot_data(data[project_globals.RESULT_COLUMNS(measure) + GROUPBY_COLUMNS])
+    data = split_hb_processing_column(data)
+    return sort_data(data.rename(columns={'process': 'measure'}))
 
 
 # def get_risk_categories(data):
