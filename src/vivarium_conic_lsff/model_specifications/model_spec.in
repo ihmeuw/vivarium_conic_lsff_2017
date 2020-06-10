@@ -41,6 +41,8 @@ components:
         - DisabilityObserver()
         - MortalityObserver()
         - HemoglobinLevelObserver()
+        - AnemiaObserver()
+
 
 
 configuration:
