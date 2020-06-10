@@ -51,21 +51,28 @@ class Mortality:
 
     def setup(self, builder):
         all_cause_mortality_data = builder.data.load("cause.all_causes.cause_specific_mortality_rate")
-        self.all_cause_mortality_rate = builder.lookup.build_table(all_cause_mortality_data, key_columns=['sex'],
+        self.all_cause_mortality_rate = builder.lookup.build_table(all_cause_mortality_data,
+                                                                   key_columns=['sex'],
                                                                    parameter_columns=['age', 'year'])
 
         self.cause_specific_mortality_rate = builder.value.register_value_producer(
             'cause_specific_mortality_rate', source=builder.lookup.build_table(0)
         )
 
-        affected_unmodelled_lb_csmr_data = self.load_unmodelled_lb_affected_csmr(builder)
-        affected_unmodelled_lb_csmr = builder.lookup.build_table(affected_unmodelled_lb_csmr_data,
-                                                                 key_columns=['sex'],
-                                                                 parameter_columns=['age', 'year'])
-
-        self.affected_unmodelled_csmr = builder.value.register_value_producer('affected_unmodelled.csmr',
-                                                                              source=affected_unmodelled_lb_csmr,
-                                                                              requires_columns=['age', 'sex'])
+        affected_unmodeled_lb_csmr_data = self.load_unmodeled_lb_affected_csmr(builder)
+        self._affected_unmodeled_csmr = builder.lookup.build_table(affected_unmodeled_lb_csmr_data,
+                                                                      key_columns=['sex'],
+                                                                      parameter_columns=['age', 'year'])
+        self.affected_unmodeled_csmr = builder.value.register_value_producer('affected_unmodeled.csmr',
+                                                                             source=self.get_affected_unmodeled_csmr,
+                                                                             requires_columns=['age', 'sex'])
+        affected_unmodeled_csmr_paf = builder.lookup.build_table(0)
+        self.affected_unmodeled_csmr_paf = builder.value.register_value_producer(
+            'affected_unmodeled.csmr.population_attributable_fraction',
+            source=lambda index: [affected_unmodeled_csmr_paf(index)],
+            preferred_combiner=list_combiner,
+            preferred_post_processor=union_post_processor
+        )
 
         self.mortality_rate = builder.value.register_rate_producer('mortality_rate',
                                                                    source=self.calculate_mortality_rate,
@@ -74,12 +81,6 @@ class Mortality:
                                                                       source=self._mortality_hazard)
         self._mortality_hazard_paf = builder.value.register_value_producer(
             'all_causes.mortality_hazard.population_attributable_fraction',
-            source=lambda index: [pd.Series(0, index=index)],
-            preferred_combiner=list_combiner,
-            preferred_post_processor=union_post_processor,
-        )
-        self._affected_unmodelled_mortality_hazard_paf = builder.value.register_value_producer(
-            'affected_unmodelled.csmr.population_attributable_fraction',
             source=lambda index: [pd.Series(0, index=index)],
             preferred_combiner=list_combiner,
             preferred_post_processor=union_post_processor,
@@ -119,13 +120,12 @@ class Mortality:
             pop.loc[deaths, 'cause_of_death'] = cause_of_death
             self.population_view.update(pop)
 
-
     def calculate_mortality_rate(self, index):
         acmr = self.all_cause_mortality_rate(index)
-        csmr = self.cause_specific_mortality_rate(index, skip_post_processor=True)
-        csmr_unmodelled_raw = self.affected_unmodelled_csmr.source(index)
-        csmr_unmodelled = self.affected_unmodelled_csmr(index)
-        cause_deleted_mortality_rate = acmr - csmr - csmr_unmodelled_raw + csmr_unmodelled
+        modeled_csmr = self.cause_specific_mortality_rate(index)
+        unmodeled_csmr_raw = self._affected_unmodeled_csmr(index)
+        unmodeled_csmr = self.affected_unmodeled_csmr(index)
+        cause_deleted_mortality_rate = acmr - modeled_csmr - unmodeled_csmr_raw + unmodeled_csmr
         return pd.DataFrame({'other_causes': cause_deleted_mortality_rate})
 
     def _mortality_hazard(self, index):
@@ -134,7 +134,12 @@ class Mortality:
         paf = self._mortality_hazard_paf(index)
         return mortality_hazard * (1 - paf)
 
-    def load_unmodelled_lb_affected_csmr(self, builder):
+    def get_affected_unmodeled_csmr(self, index):
+        raw_csmr = self._affected_unmodeled_csmr(index)
+        paf = self.affected_unmodeled_csmr_paf(index)
+        return raw_csmr * (1 - paf)
+
+    def load_unmodeled_lb_affected_csmr(self, builder):
         df = pd.DataFrame()
         for idx, cause in enumerate(project_globals.UNMODELLED_LBWSG_AFFECTED_CAUSES):
             if 0 == idx:
