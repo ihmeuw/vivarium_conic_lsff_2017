@@ -53,6 +53,7 @@ def make_measure_data(data):
         birth_weight=get_measure_no_split(data, 'birth_weight'),
         gestational_age=get_measure_no_split(data, 'gestational_age'),
         hemoglobin_level=get_measure_hb_split(data, 'hemoglobin'),
+        anemia_state_person_time=get_measure_anemia_split(data, 'anemia')
     )
     return measure_data
 
@@ -80,6 +81,7 @@ class MeasureData(NamedTuple):
     birth_weight: pd.DataFrame
     gestational_age: pd.DataFrame
     hemoglobin_level: pd.DataFrame
+    anemia_state_person_time: pd.DataFrame
 
     def dump(self, output_dir: Path):
         for key, df in self._asdict().items():
@@ -167,11 +169,19 @@ def split_processing_column(data, with_cause):
     data['folic_acid_fortification_group'], data['vitamin_a_fortification_group'] = process.str.split('_vitamin_a_').str
     return data.drop(columns='process')
 
+
 def split_hb_processing_column(data):
     data['measure'], remainder = data.process.str.split('_among_').str
     data['sex'], remainder = remainder.str.split('_at_age_').str
     data['age'], remainder = remainder.str.split('_status_').str
     data['status'], data['responsive'] = remainder.str.split('_responsive_').str
+    return data.drop(columns='process')
+
+
+def split_anemia_processing_column(data):
+    data['measure'], remainder = data.process.str.split('_person_time_in_').str
+    data['year'], remainder = remainder.str.split('_among_').str
+    data['sex'], data['age_group'] = remainder.str.split('_in_age_group_').str
     return data.drop(columns='process')
 
 
@@ -216,6 +226,12 @@ def get_measure_hb_split(data, measure):
     data = pivot_data(data[project_globals.RESULT_COLUMNS(measure) + GROUPBY_COLUMNS])
     data = split_hb_processing_column(data)
     return sort_data(data.rename(columns={'process': 'measure'}))
+
+
+def get_measure_anemia_split(data, measure):
+    data = pivot_data(data[project_globals.RESULT_COLUMNS(measure) + GROUPBY_COLUMNS])
+    data = split_anemia_processing_column(data)
+    return sort_data(data)
 
 
 # def get_risk_categories(data):
