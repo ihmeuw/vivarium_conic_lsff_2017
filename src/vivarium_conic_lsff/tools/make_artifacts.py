@@ -177,6 +177,8 @@ def build_single_location_artifact(path: Union[str, Path], location: str, log_to
     builder.load_and_write_vitamin_a_deficiency_data(artifact, location)
     logger.info(f'Loading and writing iron deficiency data.')
     builder.load_and_write_iron_deficiency_data(artifact, location)
+    logger.info('Loading and writing affected_unmodelled_lbwsg_csmr')
+    builder.load_and_write_affected_unmodelled_lbwsg_csmr(artifact, location)
 
     logger.info('**DONE**')
 

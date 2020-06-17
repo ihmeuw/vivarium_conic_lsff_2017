@@ -69,3 +69,15 @@ You'll find four directories inside the main
   Any post-processing and analysis code or notebooks you write should be
   stored in this directory.
 
+
+Verification, Validaiton, and Testing
+-------------------------------------
+
+Additional things to install::
+
+    pip install ipython pytest pdbpp
+
+Running tests::
+
+    make_specs
+    pytest --pdb
