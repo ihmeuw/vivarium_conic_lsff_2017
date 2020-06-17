@@ -38,7 +38,7 @@ from .make_results import build_results
 @click.option('-l', '--location',
               default='all',
               show_default=True,
-              type=click.Choice(project_globals.LOCATIONS + ['all']),
+              type=click.Choice(list(project_globals.LOCATIONS) + ['all']),
               help='Location to make specification for. Specify locations in globals.py')
 @click.option('-o', '--output-dir',
               default=str(paths.MODEL_SPEC_DIR),
@@ -67,7 +67,7 @@ def make_specs(template: str, location: str, output_dir: str, verbose: int, with
 @click.option('-l', '--location',
               default='all',
               show_default=True,
-              type=click.Choice(project_globals.LOCATIONS + ['all']),
+              type=click.Choice(list(project_globals.LOCATIONS) + ['all']),
               help=('Location for which to make an artifact. Note: prefer building archives on the cluster.\n'
                     'If you specify location "all" you must be on a cluster node.'))
 @click.option('-o', '--output-dir',

@@ -48,9 +48,13 @@ class IronDeficiency:
                                                                        requires_columns=['age', 'sex'],
                                                                        requires_values=[f'{self.name}.exposure'])
         builder.value.register_value_modifier('disability_weight', self.disability_weight)
+        
+        self.raw_exposure = builder.value.register_value_producer(f'{self.name}.raw_exposure',
+                                                                  source=self.get_exposure,
+                                                                  requires_values=[f'{self.name}.exposure_parameters'])
+
         self.exposure = builder.value.register_value_producer(f'{self.name}.exposure',
-                                                              source=self.get_exposure,
-                                                              requires_values=[f'{self.name}.exposure_parameters'])
+                                                              source=self.raw_exposure)
 
         self.severity = builder.value.register_value_producer('anemia_severity',
                                                               source=self.get_severity)
@@ -88,11 +92,16 @@ class IronDeficiency:
                       .subview(['iron_responsiveness_propensity'])
                       .get(index)
                       .iron_responsiveness_propensity)
-        severity = self.severity(index)
+        severity = self._private_severity(index)
         threshold = pd.Series(self.thresholds(index).lookup(index, severity), index=index)
         iron_responsive = propensity < threshold
         iron_responsive.name = 'iron_responsive'
         return iron_responsive
+
+    def _private_severity(self, index):
+        exposure = self.get_exposure(index)
+        severity = self._get_severity(exposure)
+        return severity
 
     def get_severity(self, index):
         exposure = self.exposure(index)

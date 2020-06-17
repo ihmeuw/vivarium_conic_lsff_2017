@@ -4,6 +4,7 @@ import typing
 from typing import Dict, Iterable, List, Tuple, Union
 
 import pandas as pd
+import numpy as np
 from vivarium_public_health.metrics.disability import get_years_lived_with_disability
 from vivarium_public_health.metrics import (MortalityObserver as MortalityObserver_,
                                             DisabilityObserver as DisabilityObserver_)
@@ -411,6 +412,67 @@ def get_births(pop: pd.DataFrame, config: Dict[str, bool], sim_start: pd.Timesta
     return births
 
 
+class BirthweightObserver:
+    """Observes birth_weights and stratifies by sex, year, and treatment group
+    """
+    configuration_defaults = {
+        'metrics': {
+            project_globals.BIRTH_WEIGHT_OBSERVER: {
+                'by_year': True,
+                'by_sex': True,
+            }
+        }
+    }
+
+    @property
+    def name(self):
+        return project_globals.BIRTH_WEIGHT_OBSERVER
+
+    def setup(self, builder):
+        self.disease = project_globals.BIRTH_WEIGHT
+
+        columns_required = ['alive', f'{self.disease}', 'entrance_time', 'tracked',
+                            'sex', project_globals.IRON_FORTIFICATION_COVERAGE_MOM_COLUMN]
+
+        self.population_view = builder.population.get_view(columns_required)
+        builder.value.register_value_modifier('metrics', self.metrics)
+
+    def metrics(self, index, metrics):
+        pop = self.population_view.get(index)
+        birth_weights = get_birth_weights(pop)
+        metrics.update(birth_weights)
+        return metrics
+
+    def __repr__(self):
+        return project_globals.BIRTH_WEIGHT_OBSERVER
+
+
+def get_birth_weights(pop: pd.DataFrame) -> Dict[str, float]:
+    """Obtains mean birth_weight per stratification group.
+    Parameters
+    ----------
+    pop
+        The population dataframe to be counted. It must contain sufficient
+        columns for any necessary filtering (e.g. the ``age`` column if
+        filtering by age).
+    Returns
+    -------
+    birth_weights
+        birth_weight mean and standard deviation per category.
+    """
+    birth_weights = {}
+    pop['year'] = pd.DatetimeIndex(pop['entrance_time']).year
+    gb = pop.groupby(['year', 'sex', project_globals.IRON_FORTIFICATION_COVERAGE_MOM_COLUMN])
+    for group_name, group in gb:
+        year, sex, treatment_group = group_name
+        bw_mean = f'birth_weight_mean_in_{year}_among_{sex.lower()}_iron_fortification_group_{treatment_group.lower()}'
+        bw_sd = f'birth_weight_sd_in_{year}_among_{sex.lower()}_iron_fortification_group_{treatment_group.lower()}'
+        birth_weights[bw_mean] = group.birth_weight.mean()
+        birth_weights[bw_sd] = group.birth_weight.std()
+
+    return birth_weights
+
+
 class LBWSGObserver:
 
     @property
@@ -459,4 +521,152 @@ class LBWSGObserver:
 
     def metrics(self, index, metrics):
         metrics.update(self.results)
+        return metrics
+
+
+class HemoglobinLevelObserver():
+
+    @property
+    def name(self):
+        return project_globals.HEMOGLOBIN_OBSERVER
+
+
+    def setup(self, builder):
+        self.hemoglobin = builder.value.get_value(f'{project_globals.IRON_DEFICIENCY_MODEL_NAME}.exposure')
+        self.iron_responsive = builder.value.get_value('iron_responsive')
+
+        self.population_view = builder.population.get_view(['age', 'sex',
+                                                            project_globals.IRON_COVERAGE_START_AGE_COLUMN],
+                                                           query='alive == "alive"')
+        self.results = self.get_results_template()
+
+        builder.event.register_listener('collect_metrics', self.on_collect_metrics)
+        builder.value.register_value_modifier('metrics', self.metrics)
+
+    def on_collect_metrics(self, event):
+        pop = self.population_view.get(event.index)
+        for age in project_globals.HEMOGLOBIN_AGE_GROUPS:
+            pop_age = pop[(float(age) <= pop.age) & (pop.age < float(age) + to_years(event.step_size))]
+
+            responsive = self.iron_responsive(pop_age.index)
+            idx_resp = responsive[responsive].index
+            idx_non_resp = responsive[~responsive].index
+
+            idx_covered = pop_age.loc[(pop_age.age > 0.5)
+                                      & (~pop_age.get(project_globals.IRON_COVERAGE_START_AGE_COLUMN).isnull())].index
+            idx_uncovered = pop_age.index.difference(idx_covered)
+
+            categories = itertools.product([('covered', idx_covered), ('uncovered', idx_uncovered)],
+                                           [('responsive', idx_resp), ('non-responsive', idx_non_resp)])
+            for covered_cat, responsive_cat in categories:
+                cov_label, cov_index = covered_cat
+                resp_label, resp_index = responsive_cat
+                idx = cov_index.intersection(resp_index)
+                pop_in_group = pop_age.loc[idx]
+
+                stats = self.get_hemoglobin_stats(pop_in_group)
+                stats = {f'{k}_at_age_{age}_status_{cov_label}_responsive_{resp_label}': v
+                          for k, v in stats.items()}
+                update_list(self.results, stats)
+
+    def get_results_template(self):
+        stats = {}
+        categories = itertools.product(project_globals.HEMOGLOBIN_AGE_GROUPS,
+                                       project_globals.HEMOGLOBIN_STATUS_GROUPS,
+                                       project_globals.HEMOGLOBIN_RESPONSE_GROUPS,
+                                       project_globals.SEXES,)
+        for age, covered_cat, responsive_cat, sex in categories:
+            suffix = f'age_{age}_status_{covered_cat}_responsive_{responsive_cat}'
+            stats[f'hemoglobin_mean_among_{sex}_at_{suffix}'] = [0.0]
+        return stats
+
+
+    def get_hemoglobin_stats(self, pop):
+        stats = {}
+        if not pop.empty:
+            pop = pop.drop(columns='age')
+            pop['hemoglobin_level'] = self.hemoglobin(pop.index)
+            stats[f'hemoglobin_mean_among_male'] = pop.query('sex=="Male"')['hemoglobin_level'].values
+            stats[f'hemoglobin_mean_among_female'] = pop.query('sex=="Female"')['hemoglobin_level'].values
+        return stats
+
+    def metrics(self, index, metrics):
+        final_results = post_process_hemoglobin(self.results)
+        metrics.update(final_results)
+        return metrics
+
+
+def update_list(master : dict, data_to_add : dict):
+    for k in data_to_add.keys():
+        master[k].extend(data_to_add[k])
+
+
+def post_process_hemoglobin(raw_results: dict):
+    final_results = {}
+    for k in raw_results.keys():
+        final_results[k] = np.mean(raw_results[k])
+        variance_key = k.replace('mean', 'variance')
+        final_results[variance_key] = np.var(raw_results[k])
+    return final_results
+
+
+class AnemiaObserver:
+    """Observes person time in the various anemia states"""
+    configuration_defaults = {
+        'metrics': {
+            project_globals.ANEMIA_OBSERVER: {
+                'by_age': True,
+                'by_year': True,
+                'by_sex': True,
+            }
+        }
+    }
+
+    def __init__(self):
+        self.configuration_defaults = {
+            'metrics': {project_globals.ANEMIA_OBSERVER:
+                            AnemiaObserver.configuration_defaults['metrics'][project_globals.ANEMIA_OBSERVER]}
+        }
+
+    @property
+    def name(self) -> str:
+        return project_globals.ANEMIA_OBSERVER
+
+    def setup(self, builder: 'Builder'):
+        self.config = builder.configuration['metrics']['anemia_observer'].to_dict()
+        self.clock = builder.time.clock()
+        self.age_bins = get_age_bins(builder)
+        self.person_time = Counter()
+        self.anemia_severity = builder.value.get_value('anemia_severity')
+        self.states = project_globals.ANEMIA_SEVERITY_GROUPS
+
+        columns_required = ['alive']
+        if self.config['by_age']:
+            columns_required += ['age']
+        if self.config['by_sex']:
+            columns_required += ['sex']
+        self.population_view = builder.population.get_view(columns_required)
+
+        builder.value.register_value_modifier('metrics', self.metrics)
+        # FIXME: The state table is modified before the clock advances.
+        # In order to get an accurate representation of person time we need to look at
+        # the state table before anything happens.
+        builder.event.register_listener('time_step__prepare', self.on_time_step_prepare)
+
+    def on_time_step_prepare(self, event: 'Event'):
+        pop = self.population_view.get(event.index)
+        pop['anemia'] = self.anemia_severity(pop.index)
+        # Ignoring the edge case where the step spans a new year.
+        # Accrue all counts and time to the current year.
+        for state in self.states:
+            base_key = get_output_template(**self.config).substitute(measure=f'anemia_{state}_person_time',
+                                                                     year=self.clock().year)
+            base_filter = QueryString(f'alive == "alive" and anemia == "{state}"')
+            # noinspection PyTypeChecker
+            person_time = get_group_counts(pop, base_filter, base_key, self.config, self.age_bins,
+                                           aggregate=lambda x: len(x) * to_years(event.step_size))
+            self.person_time.update(person_time)
+
+    def metrics(self, index: pd.Index, metrics: Dict[str, float]):
+        metrics.update(self.person_time)
         return metrics
