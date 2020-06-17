@@ -16,11 +16,13 @@ MAKE_ARTIFACT_CPU = '1'
 MAKE_ARTIFACT_RUNTIME = '3:00:00'
 MAKE_ARTIFACT_SLEEP = 10
 
-LOCATIONS = [
-    'India',
-    'Nigeria',
-    'Ethiopia',
-]
+
+class __Locations(NamedTuple):
+    ETHIOPIA: str = 'Ethiopia'
+    INDIA: str = 'India'
+    NIGERIA: str = 'Nigeria'
+
+LOCATIONS = __Locations()
 
 
 #############
@@ -485,7 +487,7 @@ VITAMIN_A_RISK_CATEGORIES = ['cat1', 'cat2']
 
 IRON_DEFICIENCY_MODEL_NAME = 'iron_deficiency'
 ANEMIA_SEVERITY_GROUPS = ['none', 'mild', 'moderate', 'severe']
-
+ANEMIA_OBSERVER = 'anemia_observer'
 
 DISEASE_MODELS = (DIARRHEA_MODEL_NAME, MEASLES_MODEL_NAME, LRI_MODEL_NAME, NTD_MODEL_NAME, VITAMIN_A_MODEL_NAME)
 DISEASE_MODEL_MAP = {
@@ -550,12 +552,19 @@ BIRTH_WEIGHT_STATUS_COLUMN = 'underweight'
 BIRTH_WEIGHT_NORMAL = 'normal'
 BIRTH_WEIGHT_UNDERWEIGHT = 'underweight'
 BIRTH_WEIGHT_CATEGORIES = (BIRTH_WEIGHT_NORMAL, BIRTH_WEIGHT_UNDERWEIGHT)
+BIRTH_WEIGHT_OBSERVER = 'BirthweightObserver'
 
 GESTATIONAL_AGE_STATUS_COLUMN = 'preterm'
 GESTATIONAL_AGE_NORMAL = 'normal'
 GESTATIONAL_AGE_PRETERM = 'preterm'
 GESTATIONAL_AGE_CATEGORIES = (GESTATIONAL_AGE_NORMAL, GESTATIONAL_AGE_PRETERM)
 
+
+class __IRON_RANDOM_SEEDS(NamedTuple):
+    IF_AMOUNT: str = 'iron_fortification_amount_draw_{draw}_location_{location}'
+    IF_BW_SHIFT: str = 'iron_fortification_bw_shift_draw_{draw}_location_{location}'
+    IF_HEMO_EFFECT: str = 'iron_fortification_hemoglobin_effect_draw_{draw}'
+IRON_RANDOM_SEEDS = __IRON_RANDOM_SEEDS()
 
 ###########################
 # Intervention parameters #
@@ -565,9 +574,12 @@ class __SCENARIOS(NamedTuple):
     BASELINE: str = 'baseline'
     FOLIC_ACID: str = 'folic_acid_fortification_scale_up'
     VITAMIN_A: str = 'vitamin_a_fortification_scale_up'
+    IRON: str = 'iron_fortification_scale_up'
 
 
 SCENARIOS = __SCENARIOS()
+
+IRON_FOLIC_ACID_RANDOMNESS = 'common_iron_folic_acid_randomness_key'
 
 FOLIC_ACID_DELAY = pd.Timedelta(days=365.25)
 FOLIC_ACID_ANNUAL_PROPORTION_INCREASE = 0.1
@@ -578,6 +590,18 @@ VITAMIN_A_FORTIFICATION_PROPENSITY_COLUMN = 'vitamin_a_fortification_propensity'
 VITAMIN_A_COVERAGE_START_COLUMN = 'vitamin_a_coverage_start'
 VITAMIN_A_ANNUAL_PROPORTION_INCREASE = 0.1
 VITAMIN_A_FORTIFICATION_GROUPS = ['uncovered', 'covered', 'effectively_covered']
+
+IRON_FORTIFICATION_COVERAGE_MOM_COLUMN = 'mother_ate_iron_fortified_food'
+IRON_COVERAGE_START_AGE_COLUMN = 'iron_coverage_start_age'
+IRON_FORTIFICATION_PROPENSITY_COLUMN = 'iron_fortification_propensity'
+IRON_FORTIFICATION_FOOD_CONSUMPTION = 'iron_fortified_food_consumed'
+IRON_MATERNAL_GROUPS = ['uncovered', 'covered']
+IRON_ANNUAL_PROPORTION_INCREASE = 0.1
+HEMOGLOBIN_OBSERVER = 'HemoglobinObserver'
+HEMOGLOBIN_AGE_GROUPS = ['0.5', '1', '2', '3']
+HEMOGLOBIN_STATUS_GROUPS = ['covered', 'uncovered']
+HEMOGLOBIN_RESPONSE_GROUPS = ['responsive', 'non-responsive']
+
 
 #################################
 # Results columns and variables #
@@ -610,8 +634,10 @@ STATE_PERSON_TIME_COLUMN_TEMPLATE = '{STATE}_person_time_in_{YEAR}_among_{SEX}_i
 TRANSITION_COUNT_COLUMN_TEMPLATE = '{TRANSITION}_event_count_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}_folic_acid_{FOLIC_ACID_GROUP}_vitamin_a_{VITAMIN_A_GROUP}'
 BIRTHS_COLUMN_TEMPLATE = 'live_births_in_{YEAR}_among_{SEX}_folic_acid_{FOLIC_ACID_GROUP}_vitamin_a_{VITAMIN_A_GROUP}'
 BORN_WITH_NTD_COLUMN_TEMPLATE = 'born_with_ntds_in_{YEAR}_among_{SEX}_folic_acid_{FOLIC_ACID_GROUP}_vitamin_a_{VITAMIN_A_GROUP}'
-BIRTH_WEIGHT_COLUMN_TEMPLATE = 'birth_weight_{STAT_STATE}'
+BIRTH_WEIGHT_COLUMN_TEMPLATE = 'birth_weight_{STAT_STATE}_in_{YEAR}_among_{SEX}_iron_fortification_group_{IRON_MATERNAL_GROUP}'
 GESTATIONAL_AGE_COLUMN_TEMPLATE = 'gestational_age_{STAT_STATE}'
+HEMOGLOBIN_COLUMN_TEMPLATE = 'hemoglobin_{HEMOGLOBIN_STAT_MEASURE}_among_{SEX}_at_age_{HEMOGLOBIN_AGE_GROUP}_status_{HEMOGLOBIN_STATUS_GROUP}_responsive_{HEMOGLOBIN_RESPONSE_GROUP}'
+ANEMIA_COLUMN_TEMPLATE = 'anemia_{ANEMIA_SEVERITY_STATE}_person_time_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
 
 COLUMN_TEMPLATES = {
     'population': TOTAL_POPULATION_COLUMN_TEMPLATE,
@@ -625,17 +651,21 @@ COLUMN_TEMPLATES = {
     'born_with_ntds': BORN_WITH_NTD_COLUMN_TEMPLATE,
     'birth_weight': BIRTH_WEIGHT_COLUMN_TEMPLATE,
     'gestational_age': GESTATIONAL_AGE_COLUMN_TEMPLATE,
+    'hemoglobin': HEMOGLOBIN_COLUMN_TEMPLATE,
+    'anemia': ANEMIA_COLUMN_TEMPLATE,
 }
 
 NON_COUNT_TEMPLATES = [
     'birth_weight',
-    'gestational_age'
+    'gestational_age',
+    'hemoglobin'
 ]
 
 POP_STATES = ('living', 'dead', 'tracked', 'untracked')
 STAT_MEASURES = ('mean', 'sd')
+HEMOGLOBIN_STAT_MEASURES = ('mean', 'variance')
 SEXES = ('male', 'female')
-YEARS = tuple(range(2020, 2025))
+YEARS = tuple(range(2020, 2026))
 AGE_GROUPS = ('early_neonatal', 'late_neonatal', 'post_neonatal', '1_to_4')
 CAUSES_OF_DEATH = (
     'other_causes',
@@ -666,6 +696,12 @@ TEMPLATE_FIELD_MAP = {
     'STAT_STATE': STAT_MEASURES,
     'FOLIC_ACID_GROUP': FOLIC_ACID_FORTIFICATION_GROUPS,
     'VITAMIN_A_GROUP': VITAMIN_A_FORTIFICATION_GROUPS,
+    'IRON_MATERNAL_GROUP': IRON_MATERNAL_GROUPS,
+    'HEMOGLOBIN_AGE_GROUP': HEMOGLOBIN_AGE_GROUPS,
+    'HEMOGLOBIN_STATUS_GROUP': HEMOGLOBIN_STATUS_GROUPS,
+    'HEMOGLOBIN_RESPONSE_GROUP': HEMOGLOBIN_RESPONSE_GROUPS,
+    'HEMOGLOBIN_STAT_MEASURE': HEMOGLOBIN_STAT_MEASURES,
+    'ANEMIA_SEVERITY_STATE': ANEMIA_SEVERITY_GROUPS
 }
 
 

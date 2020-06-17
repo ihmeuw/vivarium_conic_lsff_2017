@@ -3,4 +3,4 @@ random_seed_count: 40
 
 branches:
   - fortification_intervention:
-      scenario: ['baseline', 'folic_acid_fortification_scale_up', 'vitamin_a_fortification_scale_up']
+      scenario: ['baseline', 'folic_acid_fortification_scale_up', 'vitamin_a_fortification_scale_up', 'iron_fortification_scale_up']

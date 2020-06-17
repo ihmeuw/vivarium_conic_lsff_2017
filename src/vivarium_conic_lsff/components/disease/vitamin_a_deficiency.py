@@ -134,8 +134,8 @@ class VitaminADeficiency:
 
         incident_cases = ((old_disease_status == project_globals.VITAMIN_A_SUSCEPTIBLE_STATE_NAME)
                           & (current_disease_status == project_globals.VITAMIN_A_WITH_CONDITION_STATE_NAME))
-        remitted_cases = ((old_disease_status == project_globals.VITAMIN_A_SUSCEPTIBLE_STATE_NAME)
-                          & (current_disease_status == project_globals.VITAMIN_A_WITH_CONDITION_STATE_NAME))
+        remitted_cases = ((old_disease_status == project_globals.VITAMIN_A_WITH_CONDITION_STATE_NAME)
+                          & (current_disease_status == project_globals.VITAMIN_A_SUSCEPTIBLE_STATE_NAME))
 
         pop[self.name] = current_disease_status
         pop.loc[incident_cases, project_globals.VITAMIN_A_BAD_EVENT_TIME] = event.time

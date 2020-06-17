@@ -116,7 +116,7 @@ class VitaminAFortificationCoverage:
         """Load delay between fortification start and effective coverage."""
         location = builder.configuration.input_data.location
         draw = builder.configuration.input_data.input_draw_number
-        return sample_vitamin_a_time_to_effect(location, draw)
+        return sample_vitamin_a_time_to_effect(location, draw) * pd.Timedelta(days=365.25)
 
 
 class VitaminAFortificationEffect:

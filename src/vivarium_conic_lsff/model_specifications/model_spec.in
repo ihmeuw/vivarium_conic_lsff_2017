@@ -23,9 +23,11 @@ components:
         - LBWSGRiskEffect('cause.lower_respiratory_infections.excess_mortality_rate')
         - LBWSGRiskEffect('cause.diarrheal_diseases.excess_mortality_rate')
 
-        - FolicAcidFortificationCoverage()
+        - FolicAcidAndIronFortificationCoverage()
         - FolicAcidFortificationEffect()
         - FortificationIntervention()
+        - MaternalIronFortificationEffect()
+        - HemoglobinIronFortificationEffect()
 
         - VitaminAFortificationCoverage()
         - VitaminAFortificationEffect()
@@ -35,10 +37,14 @@ components:
         - DiseaseObserver('lower_respiratory_infections')
         - DiseaseObserver('vitamin_a_deficiency')
         - DiseaseObserver('neural_tube_defects')
+        - BirthweightObserver()
         - LiveBirthWithNTDObserver()
         - LBWSGObserver()
         - DisabilityObserver()
         - MortalityObserver()
+        - HemoglobinLevelObserver()
+        - AnemiaObserver()
+
 
 
 configuration:
