@@ -56,30 +56,40 @@ class FortificationIntervention:
 
     def setup(self, builder: 'Builder'):
         """Select which fortification effects to use based on scenario."""
+        scenario_setup = {
+            project_globals.SCENARIOS.BASELINE: lambda x: None,
+            project_globals.SCENARIOS.FOLIC_ACID: self.scenario_folic_acid,
+            project_globals.SCENARIOS.VITAMIN_A: self.scenario_vitamin_a,
+            project_globals.SCENARIOS.IRON: self.scenario_iron,
+            project_globals.SCENARIOS.IRON_PLUS_FOLIC_ACID: self.scenario_iron_plus_folic_acid,
+        }
         scenario = builder.configuration.fortification_intervention.scenario
+        scenario_setup[scenario](builder)
 
-        if scenario == project_globals.SCENARIOS.BASELINE:
-            pass
-        elif scenario == project_globals.SCENARIOS.FOLIC_ACID:
-            builder.value.register_value_modifier(
-                'folic_acid_fortification.coverage_level',
-                self.folic_acid_intervention.adjust_coverage_level)
-            builder.value.register_value_modifier(
-                'folic_acid_fortification.effective_coverage_level',
-                self.folic_acid_intervention.adjust_effective_coverage_level)
-        elif scenario == project_globals.SCENARIOS.VITAMIN_A:
-            builder.value.register_value_modifier(
-                'vitamin_a_fortification.coverage_level',
-                self.vitamin_a_intervention.adjust_coverage_level
-            )
-        elif scenario == project_globals.SCENARIOS.IRON:
-            builder.value.register_value_modifier(
-                'iron_fortification.coverage_level',
-                self.iron_intervention.adjust_coverage_level
-            )
-        else:
-            raise ValueError(f'Invalid fortification intervention scenario: {scenario}')
 
+    def scenario_folic_acid(self, builder: 'Builder'):
+        builder.value.register_value_modifier(
+            'folic_acid_fortification.coverage_level',
+            self.folic_acid_intervention.adjust_coverage_level)
+        builder.value.register_value_modifier(
+            'folic_acid_fortification.effective_coverage_level',
+            self.folic_acid_intervention.adjust_effective_coverage_level)
+
+    def scenario_vitamin_a(self, builder: 'Builder'):
+        builder.value.register_value_modifier(
+            'vitamin_a_fortification.coverage_level',
+            self.vitamin_a_intervention.adjust_coverage_level
+        )
+
+    def scenario_iron(self, builder: 'Builder'):
+        builder.value.register_value_modifier(
+            'iron_fortification.coverage_level',
+            self.iron_intervention.adjust_coverage_level
+        )
+
+    def scenario_iron_plus_folic_acid(self, builder: 'Builder'):
+        self.scenario_folic_acid(builder)
+        self.scenario_iron(builder)
 
 class FolicAcidFortificationIntervention:
     """Intervention on folic acid fortification level.
