@@ -177,7 +177,7 @@ class FolicAcidFortificationEffect:
 
     def adjust_birth_prevalence(self, index, birth_prevalence):
         covered = self.population_view.get(index)[self._column]
-        not_covered = covered[covered == 'false'].index
+        not_covered = covered[covered != 'covered'].index
         birth_prevalence.loc[not_covered] *= self.relative_risk(not_covered)
         return birth_prevalence
 
