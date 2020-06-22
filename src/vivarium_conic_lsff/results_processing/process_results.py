@@ -50,7 +50,7 @@ def make_measure_data(data):
         transition_count=get_measure_data(data, 'transition_count', with_cause=False),
         births=get_births(data),
         births_with_ntd=get_births(data, with_ntds=True),
-        birth_weight=get_measure_no_split(data, 'birth_weight'),
+        birth_weight=get_measure_birthweight_split(data, 'birth_weight'),
         gestational_age=get_measure_no_split(data, 'gestational_age'),
         hemoglobin_level=get_measure_hb_split(data, 'hemoglobin'),
         anemia_state_person_time=get_measure_anemia_split(data, 'anemia')
@@ -185,6 +185,13 @@ def split_anemia_processing_column(data):
     return data.drop(columns='process')
 
 
+def split_birthweight_processing_column(data):
+    data['measure'], remainder = data.process.str.split('_in_').str
+    data['year'], remainder = remainder.str.split('_among_').str
+    data['sex'], data['iron_fortification_group'] = remainder.str.split('_iron_fortification_group_').str
+    return data.drop(columns='process')
+
+
 def get_population_data(data):
     total_pop = pivot_data(data[[project_globals.TOTAL_POPULATION_COLUMN]
                                 + project_globals.RESULT_COLUMNS('population')
@@ -225,6 +232,12 @@ def get_measure_no_split(data, measure):
 def get_measure_hb_split(data, measure):
     data = pivot_data(data[project_globals.RESULT_COLUMNS(measure) + GROUPBY_COLUMNS])
     data = split_hb_processing_column(data)
+    return sort_data(data.rename(columns={'process': 'measure'}))
+
+
+def get_measure_birthweight_split(data, measure):
+    data = pivot_data(data[project_globals.RESULT_COLUMNS(measure) + GROUPBY_COLUMNS])
+    data = split_birthweight_processing_column(data)
     return sort_data(data.rename(columns={'process': 'measure'}))
 
 
