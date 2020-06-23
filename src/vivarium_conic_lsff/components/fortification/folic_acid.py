@@ -39,7 +39,7 @@ class FolicAcidAndIronFortificationCoverage:
             source=iron_coverage)
         self.iron_effective_coverage_level = builder.value.register_value_producer(
             'iron_fortification.effective_coverage_level',
-            source=iron_coverage
+            source=self.iron_coverage_level
         )
 
         iron_content_ratio = self.load_iron_content_ratio(builder)
