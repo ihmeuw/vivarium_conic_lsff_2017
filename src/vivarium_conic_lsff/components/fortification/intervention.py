@@ -31,8 +31,8 @@ class FortificationIntervention:
             # 1 year delay after simulation start.
             'intervention_start': {
                 'year': 2021,
-                'month': 7,
-                'day': 2
+                'month': 1,
+                'day': 1
             }
         }
     }
