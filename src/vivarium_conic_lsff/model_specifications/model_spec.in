@@ -63,11 +63,11 @@ configuration:
         start:
             year: 2020
             month: 1
-            day: 1
+            day: 2
         end:
             year: 2024
             month: 12
-            day: 31
+            day: 30
         step_size: 1 # Days
     population:
         population_size: 10_000
