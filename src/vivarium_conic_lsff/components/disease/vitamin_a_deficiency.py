@@ -157,7 +157,8 @@ class VitaminADeficiency:
         return pd.Series(base_exposure * (1-joint_paf), index=index, name='values')
 
     def get_current_exposure(self, index):
-        propensity = self.randomness.get_draw(index)
+        propensity = self.population_view.subview(
+            [project_globals.VITAMIN_A_PROPENSITY]).get(index).vitamin_a_deficiency_propensity
         return self._get_sample_exposure(propensity)
 
     def _get_sample_exposure(self, propensity):
