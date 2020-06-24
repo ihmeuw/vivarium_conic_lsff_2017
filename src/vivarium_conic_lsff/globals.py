@@ -666,7 +666,7 @@ POP_STATES = ('living', 'dead', 'tracked', 'untracked')
 STAT_MEASURES = ('mean', 'sd')
 HEMOGLOBIN_STAT_MEASURES = ('mean', 'variance')
 SEXES = ('male', 'female')
-YEARS = tuple(range(2020, 2026))
+YEARS = tuple(range(2020, 2025))
 AGE_GROUPS = ('early_neonatal', 'late_neonatal', 'post_neonatal', '1_to_4')
 CAUSES_OF_DEATH = (
     'other_causes',
