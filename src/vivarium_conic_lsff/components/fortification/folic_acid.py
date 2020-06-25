@@ -275,6 +275,38 @@ class IronAmountDistribution():
         return flour_consumption * self._iron_ratio
 
 
+def hb_age_fraction(pop_age: pd.Series) -> pd.Series:
+    """
+    Multiplier on Hb effect size due to children eating less food at younger
+    ages. (`age` is current age in years).
+    return 0 if age<0.5 else (age-0.5)/1.5 if age<2 else 1
+    """
+    multiplier = pd.Series(data=1, index=pop_age.index)
+    mask_under_half = pop_age < 0.5
+    mask_under_two = ((0.5 <= pop_age) & (pop_age < 2))
+    idx_under_half = mask_under_half[mask_under_half].index
+    idx_under_two = mask_under_two[mask_under_two].index
+    multiplier[idx_under_half] = 0
+    multiplier[idx_under_two] = (pop_age[idx_under_two] - 0.5) / 1.5
+    return multiplier
+
+
+def hb_lag_fraction(pop_time_since_fortified: pd.Series) -> pd.Series:
+    """
+    Multiplier on Hb effect size due to lag in response time to iron fortification.
+    The argument `time_since_fortified` is the time (in years) since a simulant
+    started eating fortified food (note that a negative value of `time_since_fortified`
+    indicates the child has not yet started eating fortified food).
+    return (0 if time_since_fortified < 0
+            else time_since_fortified/0.5  if time_since_fortified < 0.5 else 1)
+    """
+    multiplier = pd.Series(data=1, index=pop_time_since_fortified.index)
+    mask = pop_time_since_fortified < 0.5
+    idx = mask[mask].index
+    multiplier[idx] = pop_time_since_fortified[idx] / 0.5
+    return multiplier
+
+
 class HemoglobinIronFortificationEffect:
 
     @property
@@ -293,7 +325,7 @@ class HemoglobinIronFortificationEffect:
     def adjust_hemoglobin_levels(self, index, hemoglobin_levels):
         baseline_shift, hemoglobin_fortification_effect = self.treatment_effects
         pop_data = self.population_view.get(index)
-        hemoglobin_levels[index] -= baseline_shift
+        hemoglobin_levels[self.iron_responsive(index)] -= (baseline_shift * hb_age_fraction(pop_data.age))
         idx_covered = pop_data.loc[(pop_data.age > 0.5)
                                    & (~pop_data.get(project_globals.IRON_COVERAGE_START_AGE_COLUMN).isnull())
                                    & self.iron_responsive(index)].index
@@ -302,28 +334,11 @@ class HemoglobinIronFortificationEffect:
         return hemoglobin_levels
 
     def compute_shift(self, pop_data: pd.DataFrame, hemoglobin_fortification_effect : float) -> pd.Series:
-        shift = pd.Series(0.0, index=pop_data.index)
         coverage_start_age = pop_data.get(project_globals.IRON_COVERAGE_START_AGE_COLUMN)
         coverage_duration = pop_data.age - coverage_start_age
-
-        idx_young_short_coverage = pop_data.loc[
-            (coverage_start_age < 1.5) & (coverage_duration < 0.5)].index
-        idx_young_long_coverage = pop_data.loc[
-            (coverage_start_age < 1.5) & (coverage_duration >= 0.5)].index
-        idx_older_short_coverage = pop_data.loc[
-            (coverage_start_age >= 1.5) & (coverage_duration < 0.5)].index
-        idx_older_long_coverage = pop_data.loc[
-            (coverage_start_age >= 1.5) & (coverage_duration >= 0.5)].index
-
-        shift.loc[idx_young_short_coverage] = (hemoglobin_fortification_effect
-                                               * (pop_data.loc[idx_young_short_coverage].age / 1.5)
-                                               * (coverage_duration.loc[idx_young_short_coverage] / 0.5))
-        shift.loc[idx_young_long_coverage] = (hemoglobin_fortification_effect
-                                              * (pop_data.loc[idx_young_long_coverage].age - 0.5) / 1.5)
-        shift.loc[idx_older_short_coverage] = (hemoglobin_fortification_effect
-                                               * (pop_data.loc[idx_older_short_coverage].age - 0.5))
-        shift.loc[idx_older_long_coverage] = hemoglobin_fortification_effect
-
+        shift = (hb_age_fraction(pop_data.age)
+                 * hb_lag_fraction(coverage_duration)
+                 * hemoglobin_fortification_effect)
         return shift
 
     @staticmethod
@@ -334,7 +349,7 @@ class HemoglobinIronFortificationEffect:
         iron_hemoglobin_effect = get_iron_hemoglobin_effect(
             builder.configuration.input_data.input_draw_number)
         baseline_shift = baseline_iron_coverage * iron_hemoglobin_effect
-        return iron_hemoglobin_effect, baseline_shift
+        return baseline_shift, iron_hemoglobin_effect
 
 
 def get_iron_hemoglobin_effect(draw: int):
