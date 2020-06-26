@@ -83,29 +83,29 @@ configuration:
     metrics:
         disability:
             by_age: True
-            by_sex: True
+            by_sex: False
             by_year: True
         mortality:
             by_age: True
-            by_sex: True
+            by_sex: False
             by_year: True
         diarrheal_diseases_observer:
             by_age: True
-            by_sex: True
+            by_sex: False
             by_year: True
         measles_observer:
             by_age: True
-            by_sex: True
+            by_sex: False
             by_year: True
         lower_respiratory_infections_observer:
             by_age: True
-            by_sex: True
+            by_sex: False
             by_year: True
         vitamin_a_deficiency_observer:
             by_age: True
-            by_sex: True
+            by_sex: False
             by_year: True
         neural_tube_defects_observer:
             by_age: True
-            by_sex: True
+            by_sex: False
             by_year: True
