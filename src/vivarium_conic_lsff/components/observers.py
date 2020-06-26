@@ -6,6 +6,7 @@ from typing import Dict, Iterable, List, Tuple, Union
 import pandas as pd
 import numpy as np
 from vivarium_public_health.metrics.disability import get_years_lived_with_disability
+from vivarium_public_health.disease import DiseaseState, RiskAttributableDisease
 from vivarium_public_health.metrics import (MortalityObserver as MortalityObserver_,
                                             DisabilityObserver as DisabilityObserver_)
 from vivarium_public_health.metrics.utilities import (get_output_template, get_group_counts,
@@ -121,23 +122,65 @@ class ResultsStratifier:
         return raw_coverage
 
 
-class MortalityObserver(MortalityObserver_):
+class MortalityObserver():
 
-    def __init__(self):
-        super().__init__()
-        self.stratifier = ResultsStratifier(self.name)
+    configuration_defaults = {
+        'metrics': {
+            'mortality': {
+                'by_age': False,
+                'by_year': False,
+                'by_sex': False,
+            }
+        }
+    }
+
+    @property
+    def name(self):
+        return 'mortality_observer'
 
     @property
     def sub_components(self) -> List[ResultsStratifier]:
         return [self.stratifier]
+
+    def __init__(self):
+        self.person_time = Counter()
+        self.stratifier = ResultsStratifier(self.name)
+
+    def setup(self, builder):
+        self.config = builder.configuration.metrics.mortality
+        self.clock = builder.time.clock()
+        self.step_size = builder.time.step_size()
+        self.start_time = self.clock()
+        self.initial_pop_entrance_time = self.start_time - self.step_size()
+        self.age_bins = get_age_bins(builder)
+        diseases = builder.components.get_components_by_type((DiseaseState, RiskAttributableDisease))
+        self.causes = [c.state_id for c in diseases] + ['other_causes']
+
+        life_expectancy_data = builder.data.load("population.theoretical_minimum_risk_life_expectancy")
+        self.life_expectancy = builder.lookup.build_table(life_expectancy_data, key_columns=[],
+                                                          parameter_columns=['age'])
+
+        columns_required = ['tracked', 'alive', 'entrance_time', 'exit_time', 'cause_of_death',
+                            'years_of_life_lost', 'age']
+        if self.config.by_sex:
+            columns_required += ['sex']
+        self.population_view = builder.population.get_view(columns_required)
+        builder.event.register_listener('time_step__prepare', self.on_time_step_prepare)
+        builder.value.register_value_modifier('metrics', self.metrics)
+
+    def on_time_step_prepare(self, event: 'Event'):
+        pop = self.population_view.get(event.index)
+        for labels, pop_in_group in self.stratifier.group(pop):
+            base_args = (pop_in_group, self.config.to_dict(), self.start_time, self.clock(), self.age_bins)
+            person_time = get_person_time(*base_args)
+            person_time = self.stratifier.update_labels(person_time, labels)
+            self.person_time.update(person_time)
 
     def metrics(self, index, metrics):
         pop = self.population_view.get(index)
         pop.loc[pop.exit_time.isnull(), 'exit_time'] = self.clock()
 
         measure_getters = (
-            # FIXME: get person time needs to happen every time step.
-            (get_person_time, ()),
             (get_deaths, (self.causes,)),
             (get_years_of_life_lost, (self.life_expectancy, self.causes)),
         )
@@ -155,6 +198,7 @@ class MortalityObserver(MortalityObserver_):
         metrics[project_globals.TOTAL_YLLS_COLUMN] = self.life_expectancy(the_dead.index).sum()
         metrics['total_population_living'] = len(the_living)
         metrics['total_population_dead'] = len(the_dead)
+        metrics.update(self.person_time)
 
         return metrics
 
