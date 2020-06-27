@@ -10,7 +10,7 @@ from vivarium_public_health.disease import DiseaseState, RiskAttributableDisease
 from vivarium_public_health.metrics import (MortalityObserver as MortalityObserver_,
                                             DisabilityObserver as DisabilityObserver_)
 from vivarium_public_health.metrics.utilities import (get_output_template, get_group_counts,
-                                                      QueryString, to_years, get_person_time,
+                                                      QueryString, to_years,
                                                       get_deaths, get_years_of_life_lost,
                                                       get_age_bins, get_time_iterable)
 
@@ -171,7 +171,8 @@ class MortalityObserver():
     def on_time_step_prepare(self, event: 'Event'):
         pop = self.population_view.get(event.index)
         for labels, pop_in_group in self.stratifier.group(pop):
-            base_args = (pop_in_group, self.config.to_dict(), self.start_time, self.clock(), self.age_bins)
+            base_args = (pop_in_group, self.config.to_dict(),
+                         self.clock().year, event.step_size, self.age_bins)
             person_time = get_person_time(*base_args)
             person_time = self.stratifier.update_labels(person_time, labels)
             self.person_time.update(person_time)
@@ -201,6 +202,17 @@ class MortalityObserver():
         metrics.update(self.person_time)
 
         return metrics
+
+
+def get_person_time(pop: pd.DataFrame, config: Dict[str, bool],
+                    current_year: Union[str, int], step_size: pd.Timedelta,
+                    age_bins: pd.DataFrame) -> Dict[str, float]:
+    base_key = get_output_template(**config).substitute(measure='person_time',
+                                                        year=current_year)
+    base_filter = QueryString(f'alive == "alive"')
+    person_time = get_group_counts(pop, base_filter, base_key, config, age_bins,
+                                   aggregate=lambda x: len(x) * to_years(step_size))
+    return person_time
 
 
 class DisabilityObserver(DisabilityObserver_):
