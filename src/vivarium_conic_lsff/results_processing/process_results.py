@@ -159,10 +159,9 @@ def sort_data(data):
 
 
 def split_processing_column(data, with_cause):
-    data['measure'], year_sex, process = data.process.str.split('_in_').str
+    data['measure'], year, process = data.process.str.split('_in_').str
     if with_cause:
         data['measure'], data['cause'] = data['measure'].str.split('_due_to_').str
-    data['year'], data['sex'] = year_sex.str.split('_among_').str
 
     process = process.str.split('age_group_').str[1]
     data['age_group'], process = process.str.split('_folic_acid_').str
