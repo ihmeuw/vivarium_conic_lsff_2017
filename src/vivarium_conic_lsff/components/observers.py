@@ -521,7 +521,7 @@ def get_birth_weights(pop: pd.DataFrame) -> Dict[str, float]:
     gb = pop.groupby(['year', 'sex', project_globals.IRON_FORTIFICATION_COVERAGE_MOM_COLUMN])
     groups = itertools.product(project_globals.YEARS, ['Male', 'Female'], ['covered', 'uncovered'])
     for group in groups:
-        df_group = gb.get_group(group)
+        df_group = gb.get_group(group) if group in gb.groups else pd.DataFrame({'birth_weight': [0.0]})
         year, sex, treatment_group = group
         bw_mean = f'birth_weight_mean_in_{year}_among_{sex.lower()}_iron_fortification_group_{treatment_group.lower()}'
         bw_sd = f'birth_weight_sd_in_{year}_among_{sex.lower()}_iron_fortification_group_{treatment_group.lower()}'
