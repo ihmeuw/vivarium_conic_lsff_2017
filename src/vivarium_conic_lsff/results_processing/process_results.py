@@ -159,7 +159,7 @@ def sort_data(data):
 
 
 def split_processing_column(data, with_cause):
-    data['measure'], year, process = data.process.str.split('_in_').str
+    data['measure'], data['year'], process = data.process.str.split('_in_').str
     if with_cause:
         data['measure'], data['cause'] = data['measure'].str.split('_due_to_').str
 
