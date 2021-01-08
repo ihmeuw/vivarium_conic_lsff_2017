@@ -82,9 +82,9 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
 
         project_globals.LBWSG_DISTRIBUTION: load_metadata,
         project_globals.LBWSG_CATEGORIES: load_metadata,
-        project_globals.LBWSG_EXPOSURE: load_lbwsg_exposure,
-        project_globals.LBWSG_RELATIVE_RISK: load_lbwsg_relative_risk,
-        project_globals.LBWSG_PAF: load_lbwsg_paf,
+        project_globals.LBWSG_EXPOSURE: load_standard_data,
+        project_globals.LBWSG_RELATIVE_RISK: load_standard_data,
+        project_globals.LBWSG_PAF: load_standard_data,
 
         project_globals.VITAMIN_A_DEFICIENCY_CATEGORIES: load_metadata,
         project_globals.VITAMIN_A_DEFICIENCY_RESTRICTIONS: load_metadata,
@@ -107,10 +107,7 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
 
         project_globals.URI_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
         project_globals.OTITIS_MEDIA_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
-        project_globals.PNEUMOCOCCAL_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
-        project_globals.H_INFLUENZAE_TYPE_B_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
-        project_globals.MENINGOCOCCAL_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
-        project_globals.OTHER_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
+        project_globals.MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
         project_globals.ENCEPHALITIS_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
         project_globals.NEONATAL_PRETERM_BIRTH_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
         project_globals.NEONATAL_ENCEPHALOPATHY_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
@@ -357,6 +354,7 @@ def load_lri_birth_prevalence_from_meid(_, location):
                      age_group_id=project_globals.LRI_BIRTH_PREVALENCE_AGE_ID,
                      measure_id=vi_globals.MEASURES['Prevalence'],
                      gbd_round_id=project_globals.LRI_BIRTH_PREVALENCE_GBD_ROUND,
+                     decomp_step=project_globals.LRI_BIRTH_PREVALENCE_DECOMP_STEP,
                      location_id=location_id)
     data = data[data.measure_id == vi_globals.MEASURES['Prevalence']]
     data = utilities.normalize(data, fill_value=0)

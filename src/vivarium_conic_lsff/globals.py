@@ -21,6 +21,8 @@ class __Locations(NamedTuple):
     ETHIOPIA: str = 'Ethiopia'
     INDIA: str = 'India'
     NIGERIA: str = 'Nigeria'
+    TANZANIA: str = 'United Republic of Tanzania'
+    UGANDA: str = 'Uganda'
 
 LOCATIONS = __Locations()
 
@@ -60,7 +62,8 @@ LRI_BIRTH_PREVALENCE = 'cause.lower_respiratory_infections.birth_prevalence'
 LRI_BIRTH_PREVALENCE_MEID = 1258
 LRI_BIRTH_PREVALENCE_DRAW_SOURCE = 'epi'
 LRI_BIRTH_PREVALENCE_AGE_ID = 164
-LRI_BIRTH_PREVALENCE_GBD_ROUND = 5
+LRI_BIRTH_PREVALENCE_GBD_ROUND = 6
+LRI_BIRTH_PREVALENCE_DECOMP_STEP = 'step4'
 LRI_PREVALENCE = 'cause.lower_respiratory_infections.prevalence'
 LRI_INCIDENCE_RATE = 'cause.lower_respiratory_infections.incidence_rate'
 LRI_REMISSION_RATE = 'cause.lower_respiratory_infections.remission_rate'
@@ -107,10 +110,7 @@ IRON_DEFICIENCY_RESTRICTIONS = 'risk_factor.iron_deficiency.restrictions'
 # Cause specific mortality rates for causes affected by LBWSG but not included as a Disease Model
 URI_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.upper_respiratory_infections.cause_specific_mortality_rate'
 OTITIS_MEDIA_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.otitis_media.cause_specific_mortality_rate'
-PNEUMOCOCCAL_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.pneumococcal_meningitis.cause_specific_mortality_rate'
-H_INFLUENZAE_TYPE_B_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.h_influenzae_type_b_meningitis.cause_specific_mortality_rate'
-MENINGOCOCCAL_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.meningococcal_meningitis.cause_specific_mortality_rate'
-OTHER_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.other_meningitis.cause_specific_mortality_rate'
+MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.meningitis.cause_specific_mortality_rate'
 ENCEPHALITIS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.encephalitis.cause_specific_mortality_rate'
 NEONATAL_PRETERM_BIRTH_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.neonatal_preterm_birth.cause_specific_mortality_rate'
 NEONATAL_ENCEPHALOPATHY_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.neonatal_encephalopathy_due_to_birth_asphyxia_and_trauma.cause_specific_mortality_rate'
@@ -122,10 +122,7 @@ OTHER_NEONATAL_DISORDERS_CAUSE_SPECIFIC_MORTALITY_RATE = 'cause.other_neonatal_d
 UNMODELLED_LBWSG_AFFECTED_CAUSES = [
     URI_CAUSE_SPECIFIC_MORTALITY_RATE,
     OTITIS_MEDIA_CAUSE_SPECIFIC_MORTALITY_RATE,
-    PNEUMOCOCCAL_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
-    H_INFLUENZAE_TYPE_B_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
-    MENINGOCOCCAL_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
-    OTHER_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
+    MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
     ENCEPHALITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
     NEONATAL_PRETERM_BIRTH_CAUSE_SPECIFIC_MORTALITY_RATE,
     NEONATAL_ENCEPHALOPATHY_CAUSE_SPECIFIC_MORTALITY_RATE,

@@ -93,31 +93,6 @@ def write_data(artifact: Artifact, key: str, data: pd.DataFrame):
     return artifact.load(key)
 
 
-# TODO - writing and reading by draw is necessary if you are using
-#        LBWSG data. Find the read function in utilities.py
-def write_data_by_draw(artifact: Artifact, key: str, data: pd.DataFrame):
-    """Writes data to the artifact on a per-draw basis. This is useful
-    for large datasets like Low Birthweight Short Gestation (LBWSG).
-
-    Parameters
-    ----------
-    artifact
-        The artifact to write to.
-    key
-        The entity key associated with the data to write.
-    data
-        The data to write.
-
-    """
-    with pd.HDFStore(artifact.path, complevel=9, mode='a') as store:
-        key = EntityKey(key)
-        artifact._keys.append(key)
-        store.put(f'{key.path}/index', data.index.to_frame(index=False))
-        data = data.reset_index(drop=True)
-        for c in data.columns:
-            store.put(f'{key.path}/{c}', data[c])
-
-
 def load_and_write_demographic_data(artifact: Artifact, location: str):
     keys = [
         project_globals.POPULATION_STRUCTURE,
@@ -195,23 +170,14 @@ def load_and_write_lbwsg_data(artifact: Artifact, location: str):
     keys = [
         project_globals.LBWSG_DISTRIBUTION,
         project_globals.LBWSG_CATEGORIES,
-    ]
-    draw_keys = [
         project_globals.LBWSG_EXPOSURE,
         project_globals.LBWSG_RELATIVE_RISK,
         project_globals.LBWSG_PAF
     ]
 
     for key in keys:
+        logger.info(f'LBWSG - {key}')
         load_and_write_data(artifact, key, location)
-    for key in draw_keys:
-        if key in artifact:
-            logger.debug(f'Data for {key} already in artifact.  Skipping...')
-        else:
-            logger.debug(f'Loading data for {key} for location {location}.')
-            data = loader.get_data(key, location)
-            logger.debug(f'Writing data for {key} to artifact.')
-            write_data_by_draw(artifact, key, data)
 
 
 def load_and_write_vitamin_a_deficiency_data(artifact: Artifact, location: str):
@@ -251,10 +217,7 @@ def load_and_write_affected_unmodelled_lbwsg_csmr(artifact: Artifact, location: 
     keys = [
         project_globals.URI_CAUSE_SPECIFIC_MORTALITY_RATE,
         project_globals.OTITIS_MEDIA_CAUSE_SPECIFIC_MORTALITY_RATE,
-        project_globals.PNEUMOCOCCAL_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
-        project_globals.H_INFLUENZAE_TYPE_B_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
-        project_globals.MENINGOCOCCAL_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
-        project_globals.OTHER_MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
+        project_globals.MENINGITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
         project_globals.ENCEPHALITIS_CAUSE_SPECIFIC_MORTALITY_RATE,
         project_globals.NEONATAL_PRETERM_BIRTH_CAUSE_SPECIFIC_MORTALITY_RATE,
         project_globals.NEONATAL_ENCEPHALOPATHY_CAUSE_SPECIFIC_MORTALITY_RATE,
