@@ -170,8 +170,8 @@ def load_and_write_lbwsg_data(artifact: Artifact, location: str):
     keys = [
         project_globals.LBWSG_DISTRIBUTION,
         project_globals.LBWSG_CATEGORIES,
-        project_globals.LBWSG_EXPOSURE,
-        project_globals.LBWSG_RELATIVE_RISK,
+        #project_globals.LBWSG_EXPOSURE,
+        #project_globals.LBWSG_RELATIVE_RISK,
         project_globals.LBWSG_PAF
     ]
 
